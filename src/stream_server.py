@@ -31,12 +31,12 @@ ESP32_IP = os.environ.get("ESP32_IP", "http://localhost:8080")
 # Vision Hough Circles Tuning Parameters
 vision_config = {
     "dp": 1.2,
-    "minDist": 35,
+    "minDist": 55,
     "param1": 50,       # Canny higher threshold
-    "param2": 28,       # Accumulator threshold for circle centers
+    "param2": 30,       # Accumulator threshold for circle centers
     "minRadius": 15,
-    "maxRadius": 80,
-    "blurKernel": 5
+    "maxRadius": 50,
+    "blurKernel": 7
 }
 
 ik_solver = ArmKinematics(l1=120.0, l2=120.0, base_height=50.0)
@@ -51,18 +51,21 @@ def detect_colored_bins(img, base_pixel=None):
     """
     Detects colored rectangular bins (Green, Red, Black, Blue, etc.) in the image.
     Returns list of dicts with bounding boxes, center coordinates, and IK solutions.
+
+    Tuned to reject small dark coin-centers that previously triggered false BLACK bins.
     """
     h, w = img.shape[:2]
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
+    # Tightened HSV ranges – BLACK upper V dropped from 55→45, S capped at 60
     color_ranges = [
-        ('GREEN', (35, 60, 40), (88, 255, 255), (0, 200, 0)),
-        ('RED', (0, 70, 50), (10, 255, 255), (0, 0, 220)),
-        ('RED', (170, 70, 50), (180, 255, 255), (0, 0, 220)),
-        ('BLUE', (90, 70, 50), (135, 255, 255), (220, 100, 0)),
-        ('BLACK', (0, 0, 0), (180, 255, 55), (40, 40, 40)),
-        ('YELLOW', (15, 70, 70), (35, 255, 255), (0, 220, 220))
+        ('GREEN',  (35, 100, 80),  (88, 255, 255), (0, 200, 0)),
+        ('RED',    (0,   100, 80), (10, 255, 255),  (0, 0, 220)),
+        ('RED',    (170, 100, 80), (180, 255, 255), (0, 0, 220)),
+        ('BLUE',   (90,  70,  50), (135, 255, 255), (220, 100, 0)),
+        ('BLACK',  (0,   0,   0),  (180, 60,  45),  (40, 40, 40)),
+        ('YELLOW', (15,  70,  70), (35, 255, 255),  (0, 220, 220))
     ]
 
     bins = []
@@ -71,19 +74,29 @@ def detect_colored_bins(img, base_pixel=None):
     for color_name, low, high, draw_color in color_ranges:
         mask = cv2.inRange(hsv, low, high)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for c in cnts:
             area = cv2.contourArea(c)
-            # Filter for substantial rectangular areas
-            if area > 1800:
+            # ── Area gate: true bins are large; coins are small ──
+            if area >= 8000:
                 x, y, bw, bh = cv2.boundingRect(c)
-                # Ignore background borders
-                if bw < w * 0.92 and bh < h * 0.92:
+                # Ignore image-wide background borders
+                if bw < w * 0.90 and bh < h * 0.90:
+                    # ── Aspect-ratio gate: reject circles ──
+                    # A coin's bounding box is roughly square (aspect ≈ 1.0).
+                    # True rectangular bins have aspect > 1.3 OR area/bbox > 0.6
+                    aspect = max(bw, bh) / max(min(bw, bh), 1)
+                    bbox_fill = area / max(bw * bh, 1)
+                    if aspect < 1.25 and bbox_fill < 0.65:
+                        continue  # Looks circular – skip
+
                     cx, cy = x + bw // 2, y + bh // 2
 
-                    # Deduplicate overlapping detections
-                    is_dup = any(abs(prev_x - cx) < 35 and abs(prev_y - cy) < 35 for prev_x, prev_y in seen_centers)
+                    # Deduplicate overlapping detections (wider 60 px tolerance)
+                    is_dup = any(abs(prev_x - cx) < 60 and abs(prev_y - cy) < 60
+                                for prev_x, prev_y in seen_centers)
                     if not is_dup:
                         seen_centers.append((cx, cy))
                         bin_entry = {
@@ -96,14 +109,16 @@ def detect_colored_bins(img, base_pixel=None):
 
                         # Compute IK for bin center relative to base
                         if base_pixel:
-                            bin_ik = ik_solver.solve_from_base_pixel(cx, cy, base_pixel[0], base_pixel[1], target_z=30.0)
+                            bin_ik = ik_solver.solve_from_base_pixel(
+                                cx, cy, base_pixel[0], base_pixel[1], target_z=30.0)
                         else:
-                            bin_ik = ik_solver.coin_to_joint_targets(cx, cy, w, h, target_z=30.0)
+                            bin_ik = ik_solver.coin_to_joint_targets(
+                                cx, cy, w, h, target_z=30.0)
                         bin_entry["ik"] = bin_ik
 
                         bins.append(bin_entry)
 
-    # Sort bins from left to right for stable numbering: Box 1, Box 2, Box 3...
+    # Sort bins from left to right for stable numbering: Box 1, Box 2, Box 3…
     bins.sort(key=lambda b: (b['center'][0]))
     for idx, b in enumerate(bins):
         b['id'] = idx + 1
@@ -156,6 +171,28 @@ def generate_sample_workbench_image(width=800, height=600):
 
     return img
 
+def _draw_text_badge(img, text, org, font_scale=0.45, thickness=1,
+                      bg_color=(255, 255, 255), fg_color=(0, 0, 0),
+                      border_color=(0, 0, 0), padding=4):
+    """
+    Draws *text* at *org* (bottom-left) on a solid white pill background
+    with a thin black border and pure black text for maximum contrast.
+    """
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (tw, th), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    x, y = int(org[0]), int(org[1])
+    x1 = x - padding
+    y1 = y - th - padding
+    x2 = x + tw + padding
+    y2 = y + baseline + padding
+    # Clamp inside image
+    x1 = max(0, x1)
+    y1 = max(0, y1)
+    cv2.rectangle(img, (x1, y1), (x2, y2), bg_color, -1)        # white fill
+    cv2.rectangle(img, (x1, y1), (x2, y2), border_color, 1)     # black border
+    cv2.putText(img, text, (x, y), font, font_scale, fg_color,
+                thickness, cv2.LINE_AA)
+
 def analyze_and_annotate_image(img, base_pixel=None):
     """
     Detects both coins and colored rectangular bins,
@@ -205,12 +242,29 @@ def analyze_and_annotate_image(img, base_pixel=None):
 
     # ----------------------------------------------------
     # 2. Detect Circular Coins (Hough Circles)
+    #    Mask out detected bin regions so coins inside bins
+    #    are not double-counted.
     # ----------------------------------------------------
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Blank-out every detected bin rect in the grayscale image
+    # so HoughCircles never triggers inside a bin
+    bin_mask = np.ones(gray.shape, dtype=np.uint8) * 255
+    for b in detected_bins:
+        bx, by, bbw, bbh = b["rect"]
+        pad = 8  # small padding around the bin
+        x1 = max(0, bx - pad)
+        y1 = max(0, by - pad)
+        x2 = min(w, bx + bbw + pad)
+        y2 = min(h, by + bbh + pad)
+        bin_mask[y1:y2, x1:x2] = 0
+    gray = cv2.bitwise_and(gray, bin_mask)
+
+    # Gaussian blur for smoother edge gradients than median
     k = vision_config["blurKernel"]
     if k % 2 == 0:
         k += 1
-    gray = cv2.medianBlur(gray, k)
+    gray = cv2.GaussianBlur(gray, (k, k), 1.5)
 
     circles = cv2.HoughCircles(
         gray,
@@ -231,8 +285,8 @@ def analyze_and_annotate_image(img, base_pixel=None):
             center = (int(i[0]), int(i[1]))
             radius = int(i[2])
 
-            # Draw outer yellow ring & center marker
-            cv2.circle(annotated, center, radius, (0, 240, 255), 3)
+            # ── Draw coin outline (cyan ring + green center dot) ──
+            cv2.circle(annotated, center, radius, (255, 200, 0), 3)  # cyan
             cv2.circle(annotated, center, 4, (0, 255, 0), -1)
 
             # Solve Kinematics relative to tapped base pixel
@@ -249,33 +303,32 @@ def analyze_and_annotate_image(img, base_pixel=None):
             }
             targets.append(target_entry)
 
-            # Visual badge
+            # ── White-circle badge with black number at coin center ──
             badge_text = f"#{idx + 1}"
+            cv2.circle(annotated, center, 14, (255, 255, 255), -1)   # white fill
+            cv2.circle(annotated, center, 14, (0, 0, 0), 2)          # black border
             cv2.putText(annotated, badge_text, (center[0] - 10, center[1] + 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
-            cv2.putText(annotated, badge_text, (center[0] - 10, center[1] + 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 2, cv2.LINE_AA)
 
+            # ── IK label above coin (black text on white pill) ──
             if ik_solution:
-                c = ik_solution["world_coords"]
+                c_ik = ik_solution["world_coords"]
                 j = ik_solution["joints"]
-                lbl1 = f"#{idx + 1} ({c['x']}mm, {c['y']}mm)"
-                lbl2 = f"B:{j['base']}* S:{j['shoulder']}* E:{j['elbow']}*"
-                cv2.putText(annotated, lbl1, (center[0] - 55, center[1] - radius - 16),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 240, 255), 1, cv2.LINE_AA)
-                cv2.putText(annotated, lbl2, (center[0] - 65, center[1] - radius - 2),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.40, (0, 240, 255), 1, cv2.LINE_AA)
+                lbl1 = f"#{idx + 1} ({c_ik['x']}mm, {c_ik['y']}mm)"
+                lbl2 = f"B:{j['base']}  S:{j['shoulder']}  E:{j['elbow']}"
+                lbl_y = center[1] - radius - 6
+                _draw_text_badge(annotated, lbl1, (center[0] - 55, lbl_y - 16))
+                _draw_text_badge(annotated, lbl2, (center[0] - 55, lbl_y))
 
     # ----------------------------------------------------
     # 3. Draw Tapped Base Reference Marker
     # ----------------------------------------------------
     bx, by = base_pixel
     # Concentric target circles for Base
-    cv2.circle(annotated, (bx, by), 16, (0, 240, 255), 2)
+    cv2.circle(annotated, (bx, by), 16, (0, 200, 255), 2)
     cv2.circle(annotated, (bx, by), 8, (0, 0, 255), -1)
-    cv2.drawMarker(annotated, (bx, by), (0, 240, 255), cv2.MARKER_CROSS, 36, 2)
-    cv2.putText(annotated, "BASE REF (0, 0)", (bx - 60, by + 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 240, 255), 2, cv2.LINE_AA)
+    cv2.drawMarker(annotated, (bx, by), (0, 200, 255), cv2.MARKER_CROSS, 36, 2)
+    _draw_text_badge(annotated, "BASE REF (0, 0)", (bx - 60, by + 30), font_scale=0.55)
 
     # Encode to base64
     ret, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 90])
