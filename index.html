@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Gravity Robotic Arm Command Center</title>
+    <style>
+        /* ==========================================================
+           STRICT SOLID PALETTE - NO GRADIENT COLORS USED ANYWHERE
+           ========================================================== */
+        :root {
+            --bg-main: #0b0f19;
+            --panel-bg: #111827;
+            --panel-border: #374151;
+            --panel-border-focus: #00f0ff;
+            --accent-cyan: #00f0ff;
+            --accent-cyan-hover: #00c4d4;
+            --accent-red: #ef4444;
+            --accent-red-hover: #dc2626;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --box-bg: #1f2937;
+            --box-bg-dark: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 24px;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--panel-border);
+        }
+
+        .header-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+        }
+
+        .header-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .esp-input-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--box-bg-dark);
+            border: 1px solid var(--panel-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .esp-input-box label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .esp-input-box input {
+            background-color: transparent;
+            border: none;
+            color: var(--accent-cyan);
+            font-family: monospace;
+            font-size: 12px;
+            width: 160px;
+            outline: none;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+        }
+        .status-dot.online { background-color: var(--accent-green); }
+        .status-dot.offline { background-color: var(--accent-red); }
+
+        /* Main Structured Layout matching user diagram */
+        .app-container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 1. TOP: Centered Big Image Window */
+        .image-window-card {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .image-display-frame {
+            width: 100%;
+            height: 440px;
+            background-color: #000000;
+            border: 2px solid var(--panel-border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-display-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            cursor: crosshair;
+        }
+
+        /* No Image Placeholder */
+        .no-image-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 30px;
+            cursor: pointer;
+        }
+
+        .no-image-title {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .no-image-subtitle {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tap-hint-bar {
+            width: 100%;
+            background-color: var(--box-bg-dark);
+            border: 1px solid var(--panel-border);
+            color: var(--accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            padding: 6px;
+            margin-top: 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* 2. MIDDLE ROW: 4 Distinct Control Boxes */
+        .middle-controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.3fr;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .control-box {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Box 1: Upload Control */
+        .upload-box-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .btn-upload-big {
+            background-color: var(--accent-cyan);
+            color: #000000;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.15s;
+        }
+        .btn-upload-big:hover {
+            background-color: var(--accent-cyan-hover);
+            border-color: var(--accent-cyan-hover);
+        }
+
+        .btn-sample-demo {
+            background-color: var(--box-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-sample-demo:hover {
+            background-color: #374151;
+            color: #ffffff;
+        }
+
+        /* Box 2: DETECT BIN BOX */
+        .detect-box-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .btn-detect-bins {
+            background-color: var(--box-bg);
+            color: var(--accent-yellow);
+            border: 2px solid var(--accent-yellow);
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-detect-bins:hover {
+            background-color: var(--accent-yellow);
+            color: #000000;
+        }
+
+        .detect-bin-status {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-family: monospace;
+        }
+
+        /* Box 3: Set Base Point */
+        .base-box-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .base-input-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .base-coord-input {
+            flex: 1;
+            background-color: var(--box-bg-dark);
+            border: 2px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 8px;
+            color: var(--accent-cyan);
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+            text-align: center;
+        }
+        .base-coord-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-set-base {
+            background-color: var(--box-bg);
+            color: var(--accent-cyan);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-set-base:hover {
+            background-color: var(--accent-cyan);
+            color: #000000;
+        }
+
+        .base-status-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-family: monospace;
+        }
+
+        /* Box 4: Action Buttons (TO box 1, 2, 3, Cancel, abort) */
+        .actions-box-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .box-row-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .box-row-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 6px;
+        }
+
+        .btn-box-action {
+            background-color: var(--box-bg);
+            color: var(--text-primary);
+            border: 2px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 10px 4px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .btn-box-action:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background-color: #1e293b;
+        }
+
+        .btn-cancel {
+            background-color: #374151;
+            color: var(--text-primary);
+            border: 2px solid #4b5563;
+            border-radius: 6px;
+            padding: 9px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-cancel:hover {
+            background-color: #4b5563;
+        }
+
+        .btn-abort {
+            background-color: var(--accent-red);
+            color: #ffffff;
+            border: 2px solid var(--accent-red);
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .btn-abort:hover {
+            background-color: var(--accent-red-hover);
+            border-color: var(--accent-red-hover);
+        }
+
+        /* 3. BOTTOM: all SLIDER CONTROLS Full-Width Container */
+        .sliders-panel {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .sliders-title {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--panel-border);
+            padding-bottom: 8px;
+        }
+
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 32px;
+            row-gap: 20px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .slider-title {
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .slider-val {
+            color: var(--accent-cyan);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background-color: var(--box-bg-dark);
+            border: 1px solid var(--panel-border);
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        .bottom-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .btn-mag {
+            background-color: transparent;
+            color: var(--accent-cyan);
+            border: 2px solid var(--accent-cyan);
+            padding: 12px 28px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-mag:hover {
+            background-color: #00373d;
+        }
+        .btn-mag.active {
+            background-color: var(--accent-cyan);
+            color: #000000;
+        }
+
+        .btn-neutral {
+            background-color: var(--box-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--panel-border);
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-neutral:hover {
+            background-color: #374151;
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .detection-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            color: var(--text-secondary);
+        }
+
+        .detection-coins-tag {
+            color: var(--accent-yellow);
+            font-weight: 700;
+        }
+
+        /* Mobile Breakpoint */
+        @media (max-width: 860px) {
+            body { padding: 10px 12px; }
+            header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .header-status-bar { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+            .esp-input-box { flex: 1; min-width: 180px; }
+            .image-display-frame { height: 260px; }
+            .no-image-title { font-size: 26px; }
+            .middle-controls-grid { grid-template-columns: 1fr; gap: 12px; }
+            .sliders-grid { grid-template-columns: 1fr; gap: 16px; }
+            .bottom-actions-bar { flex-direction: column; gap: 12px; }
+            .btn-mag { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title-wrap">
+            <h1>Anti-Gravity Robotic Arm Command Center</h1>
+        </div>
+
+        <div class="header-status-bar">
+            <div class="esp-input-box">
+                <label for="espIpInput">ESP32 IP:</label>
+                <input type="text" id="espIpInput" value="http://localhost:8080" placeholder="http://192.168.1.X:80" onchange="updateEspIp()">
+            </div>
+
+            <div class="status-pill">
+                <div class="status-dot" id="pingDot"></div>
+                <span id="pingStatus">CONNECTING</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- 1. TOP: Centered Big Image Window -->
+        <div class="image-window-card">
+            <div class="image-display-frame" id="displayFrame">
+                <!-- Shown when NO image is loaded -->
+                <div class="no-image-placeholder" id="noImagePlaceholder" onclick="document.getElementById('imageFileInput').click()">
+                    <div class="no-image-title">NO IMAGE</div>
+                    <div class="no-image-subtitle">CLICK HERE OR USE THE BUTTON BELOW TO UPLOAD</div>
+                </div>
+
+                <!-- Displayed when image is uploaded (Tappable to set Base Reference) -->
+                <img id="annotatedImage" alt="Analyzed Workbench Image" onclick="handleImageTap(event)">
+            </div>
+
+            <div class="tap-hint-bar" id="tapHintBar" style="display: none;">
+                💡 TAP ANYWHERE ON THE IMAGE TO SET ROBOT BASE REFERENCE POINT
+            </div>
+
+            <div class="detection-bar">
+                <div>STATUS: <span id="telemetryStatus" style="color: var(--text-primary);">READY FOR IMAGE</span></div>
+                <div id="coinsCountTag" class="detection-coins-tag">0 COINS | 0 BINS</div>
+            </div>
+        </div>
+
+        <!-- 2. MIDDLE ROW: 4 Control Boxes (Upload, Detect Bins, Set Base, Actions) -->
+        <div class="middle-controls-grid">
+            <!-- Box 1: Upload the pic button -->
+            <div class="control-box">
+                <div class="upload-box-inner">
+                    <button class="btn-upload-big" onclick="document.getElementById('imageFileInput').click()">
+                        Upload the pic
+                    </button>
+                    <button class="btn-sample-demo" onclick="loadSampleDemoImage()">
+                        Load Sample Workbench Pic
+                    </button>
+                    <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(this.files)">
+                </div>
+            </div>
+
+            <!-- Box 2: DETECT BIN BOX (Click to detect/refresh bins) -->
+            <div class="control-box">
+                <div class="detect-box-inner">
+                    <button class="btn-detect-bins" onclick="triggerDetectBins()">
+                        🔍 DETECT BINS (REFRESH)
+                    </button>
+                    <div class="detect-bin-status" id="binDetectionStatus">Colored Bins: Scanning</div>
+                </div>
+            </div>
+
+            <!-- Box 3: SET BASE point -->
+            <div class="control-box">
+                <div class="base-box-inner">
+                    <div class="base-input-row">
+                        <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
+                        <button class="btn-set-base" onclick="applyManualBasePoint()">SET</button>
+                    </div>
+                    <div class="base-status-text" id="baseStatusLabel">SET BASE (Or Tap Image)</div>
+                </div>
+            </div>
+
+            <!-- Box 4: Sorting & Emergency Buttons -->
+            <div class="control-box">
+                <div class="actions-box-inner">
+                    <div class="box-row-top">
+                        <button class="btn-box-action" onclick="sortToBox(1)">TO box 1</button>
+                        <button class="btn-box-action" onclick="sortToBox(2)">to box2</button>
+                        <button class="btn-box-action" onclick="sortToBox(3)">to box3</button>
+                    </div>
+                    <div class="box-row-bottom">
+                        <button class="btn-cancel" onclick="cancelAction()">Cancel</button>
+                        <button class="btn-abort" onclick="abortEmergency()">abort</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. BOTTOM: all SLIDER CONTROLS Full-Width Container -->
+        <div class="sliders-panel">
+            <div class="sliders-title">
+                <span>all SLIDER CONTROLS</span>
+                <button class="btn-neutral" onclick="resetNeutral()">RESET NEUTRAL (90°)</button>
+            </div>
+
+            <div class="sliders-grid">
+                <!-- Joint 0: Base -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-title">Base Rotation (Joint 0)</span>
+                        <span class="slider-val" id="baseVal">90°</span>
+                    </div>
+                    <input type="range" id="joint0" min="0" max="180" value="90" oninput="onSliderMove(0, this.value)" onchange="sendJoint(0, this.value)">
+                </div>
+
+                <!-- Joint 1: Shoulder -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-title">Shoulder Pitch (Joint 1)</span>
+                        <span class="slider-val" id="shoulderVal">90°</span>
+                    </div>
+                    <input type="range" id="joint1" min="0" max="180" value="90" oninput="onSliderMove(1, this.value)" onchange="sendJoint(1, this.value)">
+                </div>
+
+                <!-- Joint 2: Elbow -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-title">Elbow Flex (Joint 2)</span>
+                        <span class="slider-val" id="elbowVal">90°</span>
+                    </div>
+                    <input type="range" id="joint2" min="0" max="180" value="90" oninput="onSliderMove(2, this.value)" onchange="sendJoint(2, this.value)">
+                </div>
+
+                <!-- Joint 3: Wrist -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-title">Wrist Tilt (Joint 3)</span>
+                        <span class="slider-val" id="wristVal">90°</span>
+                    </div>
+                    <input type="range" id="joint3" min="0" max="180" value="90" oninput="onSliderMove(3, this.value)" onchange="sendJoint(3, this.value)">
+                </div>
+            </div>
+
+            <div class="bottom-actions-bar">
+                <button class="btn-mag" id="magBtn" onclick="toggleMagnet()">ELECTROMAGNET: OFF</button>
+                <div style="font-size: 12px; color: var(--text-muted); font-family: monospace;">SOLID COLOR UI • HARDWARE READY</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ESP32 IP Configuration - Dynamic Host for Mobile Access
+        const currentHost = window.location.hostname || "localhost";
+        const defaultEsp = (currentHost === "localhost" || currentHost === "127.0.0.1")
+            ? "http://localhost:8080"
+            : `http://${currentHost}:8080`;
+
+        let ESP_IP = localStorage.getItem("ESP_IP") || defaultEsp;
+        document.getElementById("espIpInput").value = ESP_IP;
+
+        function updateEspIp() {
+            let val = document.getElementById("espIpInput").value.trim();
+            if (!val.startsWith("http")) val = "http://" + val;
+            ESP_IP = val;
+            localStorage.setItem("ESP_IP", ESP_IP);
+            checkConnection();
+        }
+
+        // Upload and process image
+        async function handleFileSelect(files) {
+            if (!files || files.length === 0) return;
+            const file = files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            document.getElementById('telemetryStatus').innerText = "PROCESSING IMAGE...";
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                renderResults(data);
+            } catch (err) {
+                console.error("Upload error:", err);
+                alert("Upload failed. Ensure server is active.");
+            }
+        }
+
+        async function loadSampleDemoImage() {
+            document.getElementById('telemetryStatus').innerText = "GENERATING SAMPLE WITH BINS...";
+            try {
+                const res = await fetch('/api/sample');
+                const data = await res.json();
+                renderResults(data);
+            } catch (err) {
+                console.error("Error loading sample:", err);
+            }
+        }
+
+        // Tap on Image to Set Base Point
+        async function handleImageTap(e) {
+            const img = document.getElementById('annotatedImage');
+            const rect = img.getBoundingClientRect();
+
+            // Calculate click position relative to the image element
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Map displayed image coordinates to full natural image resolution
+            const scaleX = img.naturalWidth / rect.width;
+            const scaleY = img.naturalHeight / rect.height;
+            const pixelX = Math.round(clickX * scaleX);
+            const pixelY = Math.round(clickY * scaleY);
+
+            document.getElementById('telemetryStatus').innerText = `SETTING BASE AT (${pixelX}, ${pixelY})...`;
+
+            try {
+                const res = await fetch('/api/set_base_tap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pixel_x: pixelX, pixel_y: pixelY })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderResults(data);
+                    document.getElementById('basePointInput').value = `${pixelX}, ${pixelY}`;
+                    document.getElementById('baseStatusLabel').innerText = `BASE POINT: (${pixelX}, ${pixelY}) px`;
+                    document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
+                    document.getElementById('telemetryStatus').innerText = `BASE SET AT (${pixelX}, ${pixelY}) - IK RECALCULATED`;
+                }
+            } catch (err) {
+                console.error("Error setting base from tap:", err);
+            }
+        }
+
+        // Manual Set Base Point
+        async function applyManualBasePoint() {
+            const raw = document.getElementById('basePointInput').value.split(',');
+            if (raw.length < 2) return;
+            const px = parseInt(raw[0].trim());
+            const py = parseInt(raw[1].trim());
+
+            try {
+                const res = await fetch('/api/set_base_tap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pixel_x: px, pixel_y: py })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderResults(data);
+                    document.getElementById('baseStatusLabel').innerText = `BASE POINT: (${px}, ${py}) px`;
+                    document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Re-run and refresh bin detection
+        async function triggerDetectBins() {
+            document.getElementById('telemetryStatus').innerText = "SCANNING FOR COLORED BINS...";
+            document.getElementById('binDetectionStatus').innerText = "Detecting...";
+            try {
+                const res = await fetch('/api/detect_bins', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderResults(data);
+                    document.getElementById('binDetectionStatus').innerText = `${data.bins_found} Bins Detected`;
+                    document.getElementById('binDetectionStatus').style.color = "var(--accent-green)";
+                    document.getElementById('telemetryStatus').innerText = `FOUND ${data.bins_found} COLORED BINS`;
+                }
+            } catch (err) {
+                console.error("Detect bins error:", err);
+            }
+        }
+
+        // Render detected items on screen
+        function renderResults(data) {
+            if (!data || data.status !== 'success') return;
+
+            const img = document.getElementById('annotatedImage');
+            const placeholder = document.getElementById('noImagePlaceholder');
+            const hint = document.getElementById('tapHintBar');
+
+            img.src = data.image_data;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            hint.style.display = 'block';
+
+            const numCoins = data.coins_found || 0;
+            const numBins = data.bins_found || 0;
+            document.getElementById('coinsCountTag').innerText = `${numCoins} COIN${numCoins === 1 ? '' : 'S'} | ${numBins} BIN${numBins === 1 ? '' : 'S'}`;
+
+            if (data.bins && data.bins.length > 0) {
+                const binNames = data.bins.map(b => b.name).join(', ');
+                document.getElementById('binDetectionStatus').innerText = binNames;
+                document.getElementById('binDetectionStatus').style.color = "var(--accent-green)";
+            }
+
+            if (data.base_pixel) {
+                document.getElementById('basePointInput').value = `${data.base_pixel.x}, ${data.base_pixel.y}`;
+            }
+
+            // If coins exist, update sliders to the primary target
+            if (data.targets && data.targets.length > 0 && data.targets[0].ik) {
+                const j = data.targets[0].ik.joints;
+                updateSlidersDisplay(j);
+            }
+        }
+
+        function updateSlidersDisplay(j) {
+            if (!j) return;
+            document.getElementById('joint0').value = j.base;
+            document.getElementById('joint1').value = j.shoulder;
+            document.getElementById('joint2').value = j.elbow;
+            document.getElementById('joint3').value = j.wrist;
+            onSliderMove(0, j.base);
+            onSliderMove(1, j.shoulder);
+            onSliderMove(2, j.elbow);
+            onSliderMove(3, j.wrist);
+        }
+
+        // Sorting Boxes 1, 2, 3 (Dispatches to real detected bin position)
+        async function sortToBox(boxNumber) {
+            document.getElementById('telemetryStatus').innerText = `ROUTING TO DETECTED BOX ${boxNumber}...`;
+            try {
+                const res = await fetch('/api/sort_to_box', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ box: boxNumber, esp_ip: ESP_IP })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    updateSlidersDisplay(data.joints);
+                    document.getElementById('telemetryStatus').innerText = `DELIVERED TO BOX ${boxNumber}`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Cancel and Abort
+        function cancelAction() {
+            document.getElementById('telemetryStatus').innerText = "OPERATION CANCELLED";
+        }
+
+        async function abortEmergency() {
+            document.getElementById('telemetryStatus').innerText = "EMERGENCY ABORT TRIGGERED!";
+            try {
+                await fetch('/api/abort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ esp_ip: ESP_IP })
+                });
+            } catch (e) {
+                console.error(e);
+            }
+            resetNeutral();
+            if (magState) toggleMagnet();
+        }
+
+        // Hardware Communication
+        async function checkConnection() {
+            const dot = document.getElementById('pingDot');
+            const statusText = document.getElementById('pingStatus');
+            try {
+                const res = await fetch(ESP_IP + '/status', { method: 'GET', mode: 'cors' });
+                if (res.ok) {
+                    dot.className = "status-dot online";
+                    statusText.innerText = "ONLINE";
+                    statusText.style.color = "var(--accent-green)";
+                } else {
+                    throw new Error();
+                }
+            } catch (e) {
+                dot.className = "status-dot offline";
+                statusText.innerText = "OFFLINE";
+                statusText.style.color = "var(--accent-red)";
+            }
+        }
+
+        async function postData(endpoint, data) {
+            try {
+                const res = await fetch(ESP_IP + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return await res.json();
+            } catch (e) {
+                console.error("Communication error:", e);
+                return null;
+            }
+        }
+
+        function onSliderMove(jointIndex, val) {
+            const labels = ['baseVal', 'shoulderVal', 'elbowVal', 'wristVal'];
+            document.getElementById(labels[jointIndex]).innerText = val + '°';
+        }
+
+        function sendJoint(jointIndex, angleValue) {
+            postData('/joint', { joint: parseInt(jointIndex), angle: parseInt(angleValue) });
+        }
+
+        let magState = false;
+        async function toggleMagnet() {
+            magState = !magState;
+            const btn = document.getElementById('magBtn');
+            btn.innerText = magState ? 'ELECTROMAGNET: ON' : 'ELECTROMAGNET: OFF';
+            btn.className = magState ? 'btn-mag active' : 'btn-mag';
+            await postData('/grip', { state: magState ? "close" : "open" });
+        }
+
+        function resetNeutral() {
+            for (let i = 0; i < 4; i++) {
+                document.getElementById('joint' + i).value = 90;
+                onSliderMove(i, 90);
+                sendJoint(i, 90);
+            }
+        }
+
+        // Periodic checks
+        setInterval(checkConnection, 3000);
+        checkConnection();
+    </script>
+</body>
+</html>

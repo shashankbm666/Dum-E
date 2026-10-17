@@ -1,0 +1,18 @@
+# Python Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# OS and Temp Files
+.DS_Store
+Thumbs.db
+*.log
+taste-ui
