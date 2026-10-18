@@ -409,7 +409,7 @@ def proxy_grip():
 @app.route('/api/upload', methods=['POST'])
 def upload_image():
     """Receives image file, processes it, and caches the raw image for re-detection/taps."""
-    global current_raw_image, last_processed_results, image_version
+    global current_raw_image, current_base_pixel, last_processed_results, image_version
 
     img = None
     if 'image' in request.files:
@@ -431,55 +431,77 @@ def upload_image():
     if img is None:
         return jsonify({"status": "error", "error": "No valid image provided"}), 400
 
+    # Normalize image dimensions if excessively large (e.g. from mobile phone cameras 12MP/4K)
+    # This prevents HoughCircles failure, HSV noise, and multi-megabyte sync transfer lag
+    h, w = img.shape[:2]
+    max_dim = 960
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
     current_raw_image = img
+    current_base_pixel = None  # Reset base reference to auto bottom-center of new image
     image_version += 1
-    results = analyze_and_annotate_image(img)
+    results = analyze_and_annotate_image(img, base_pixel=None)
+    results["version"] = image_version
     last_processed_results = results
     return jsonify(results)
 
 @app.route('/api/sample', methods=['GET'])
 def get_sample():
-    """Generates and processes a sample test image with colored bins and coins."""
-    global current_raw_image, last_processed_results, image_version
+    """Generates and processes a sample test image with colored bins and coins (explicitly requested by user)."""
+    global current_raw_image, current_base_pixel, last_processed_results, image_version
     sample_img = generate_sample_workbench_image()
     current_raw_image = sample_img
+    current_base_pixel = None
     image_version += 1
-    results = analyze_and_annotate_image(sample_img)
+    results = analyze_and_annotate_image(sample_img, base_pixel=None)
+    results["version"] = image_version
     last_processed_results = results
     return jsonify(results)
 
 @app.route('/api/set_base_tap', methods=['POST'])
 def set_base_tap():
     """Sets the robot arm base reference directly by tapping coordinates on the image."""
-    global current_raw_image, current_base_pixel, last_processed_results
+    global current_raw_image, current_base_pixel, last_processed_results, image_version
     if current_raw_image is None:
-        return jsonify({"status": "error", "error": "No image loaded yet"}), 400
+        return jsonify({"status": "error", "error": "No image loaded yet. Please snap a photo or load an image first."}), 400
 
     data = request.get_json(force=True, silent=True) or {}
     px = int(data.get("pixel_x", current_raw_image.shape[1] // 2))
     py = int(data.get("pixel_y", current_raw_image.shape[0] - 30))
 
+    # Clamp coordinates to current image bounds
+    h, w = current_raw_image.shape[:2]
+    px = max(0, min(w - 1, px))
+    py = max(0, min(h - 1, py))
+
     current_base_pixel = [px, py]
     results = analyze_and_annotate_image(current_raw_image, base_pixel=current_base_pixel)
+    image_version += 1
+    results["version"] = image_version
     last_processed_results = results
     return jsonify(results)
 
 @app.route('/api/detect_bins', methods=['POST', 'GET'])
 def trigger_detect_bins():
     """Re-runs and refreshes rectangular colored bin detection on the active image."""
-    global current_raw_image, last_processed_results
+    global current_raw_image, current_base_pixel, last_processed_results, image_version
     if current_raw_image is None:
-        return jsonify({"status": "error", "error": "No image loaded yet"}), 400
+        return jsonify({"status": "error", "error": "No image loaded yet. Please snap a photo or load an image first."}), 400
 
     results = analyze_and_annotate_image(current_raw_image, base_pixel=current_base_pixel)
+    image_version += 1
+    results["version"] = image_version
     last_processed_results = results
     return jsonify(results)
 
 @app.route('/api/detect', methods=['GET'])
 def get_latest_detection():
-    """Returns the most recent image processing results."""
+    """Returns the most recent image processing results. Never implicitly overwrites with sample."""
     if last_processed_results is None:
-        return get_sample()
+        return jsonify({"status": "no_image", "version": image_version, "message": "No image loaded yet."})
+    last_processed_results["version"] = image_version
     return jsonify(last_processed_results)
 
 @app.route('/api/image_version', methods=['GET'])

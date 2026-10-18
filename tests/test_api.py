@@ -80,5 +80,67 @@ class TestApiEndpoints(unittest.TestCase):
         self.assertIn("local_ip", data)
         self.assertIn("port", data)
 
+    def test_detect_no_image_guard(self):
+        import src.stream_server as srv
+        # Reset state to clean initial condition
+        srv.current_raw_image = None
+        srv.last_processed_results = None
+        srv.image_version = 0
+
+        res = self.stream_client.get('/api/detect')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "no_image")
+        self.assertIsNone(srv.current_raw_image)
+
+    def test_set_base_tap_no_image_returns_error(self):
+        import src.stream_server as srv
+        srv.current_raw_image = None
+        srv.last_processed_results = None
+
+        res = self.stream_client.post('/api/set_base_tap', json={"pixel_x": 100, "pixel_y": 100})
+        self.assertEqual(res.status_code, 400)
+        data = res.get_json()
+        self.assertEqual(data["status"], "error")
+
+    def test_image_upload_and_version_sync(self):
+        import src.stream_server as srv
+        srv.current_raw_image = None
+        srv.last_processed_results = None
+        srv.image_version = 0
+
+        # Create a small valid test JPEG image in memory
+        dummy = np.zeros((200, 200, 3), dtype=np.uint8)
+        cv2.circle(dummy, (100, 100), 20, (200, 200, 200), -1)
+        _, buf = cv2.imencode('.jpg', dummy)
+
+        # Upload image
+        data = {'image': (io.BytesIO(buf.tobytes()), 'test.jpg')}
+        res = self.stream_client.post('/api/upload', data=data, content_type='multipart/form-data')
+        self.assertEqual(res.status_code, 200)
+        upload_data = res.get_json()
+        self.assertEqual(upload_data["status"], "success")
+        self.assertEqual(upload_data["version"], 1)
+
+        # Tap base point -> version increments to 2
+        tap_res = self.stream_client.post('/api/set_base_tap', json={"pixel_x": 100, "pixel_y": 190})
+        self.assertEqual(tap_res.status_code, 200)
+        tap_data = tap_res.get_json()
+        self.assertEqual(tap_data["version"], 2)
+        self.assertEqual(tap_data["base_pixel"], {"x": 100, "y": 190})
+
+        # Detect bins refresh -> version increments to 3
+        refresh_res = self.stream_client.post('/api/detect_bins')
+        self.assertEqual(refresh_res.status_code, 200)
+        refresh_data = refresh_res.get_json()
+        self.assertEqual(refresh_data["version"], 3)
+
+        # /api/detect returns version 3 with the uploaded image, NOT sample
+        detect_res = self.stream_client.get('/api/detect')
+        self.assertEqual(detect_res.status_code, 200)
+        detect_data = detect_res.get_json()
+        self.assertEqual(detect_data["version"], 3)
+        self.assertEqual(detect_data["base_pixel"], {"x": 100, "y": 190})
+
 if __name__ == '__main__':
     unittest.main()
