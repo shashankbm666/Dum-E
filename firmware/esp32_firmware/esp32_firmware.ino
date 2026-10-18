@@ -202,11 +202,23 @@ void setup() {
             int joint = doc["joint"];
             int angle = constrain((int)doc["angle"], 0, 180);
 
-            // Set target - the loop() smoothly glides to this angle without jerky snaps
+            // Direct write - servo follows slider instantly, no smooth stepping
             switch (joint) {
-                case 0: targetBase = angle; break;
-                case 1: targetShoulder = angle; break;
-                case 2: targetElbow = angle; break;
+                case 0:
+                    targetBase = angle;
+                    currentBase = angle;
+                    baseServo.write(angle);
+                    break;
+                case 1:
+                    targetShoulder = angle;
+                    currentShoulder = angle;
+                    shoulderServo.write(angle);
+                    break;
+                case 2:
+                    targetElbow = angle;
+                    currentElbow = angle;
+                    elbowServo.write(angle);
+                    break;
                 default:
                     AsyncWebServerResponse* res = req->beginResponse(400, "application/json", "{\"error\":\"Unknown joint index (0=Base, 1=Shoulder, 2=Elbow)\"}");
                     addCORS(res);
@@ -214,7 +226,7 @@ void setup() {
                     return;
             }
 
-            Serial.printf("[SMOOTH SERVO] Joint %d commanded -> Target: %d deg (gliding smoothly)\n", joint, angle);
+            Serial.printf("[SERVO] Joint %d -> %d deg (instant)\n", joint, angle);
             AsyncWebServerResponse* res = req->beginResponse(200, "application/json", "{\"status\":\"success\",\"joint\":" + String(joint) + ",\"target\":" + String(angle) + "}");
             addCORS(res);
             req->send(res);
