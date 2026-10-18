@@ -202,10 +202,10 @@
             letter-spacing: 0.05em;
         }
 
-        /* 2. MIDDLE ROW: 4 Distinct Control Boxes */
+        /* 2. MIDDLE ROW: 3 Unified Control Boxes */
         .middle-controls-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1.3fr;
+            grid-template-columns: 1fr 1.25fr 1fr;
             gap: 14px;
             width: 100%;
         }
@@ -214,10 +214,23 @@
             background-color: var(--panel-bg);
             border: 2px solid var(--panel-border);
             border-radius: 8px;
-            padding: 14px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
+        }
+
+        .control-box-header {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         /* Box 1: Upload Control */
@@ -425,13 +438,31 @@
             color: #ffffff;
         }
 
-        /* Box 2: DETECT BIN BOX */
-        .detect-box-inner {
+        /* Box 2: Unified Detection & Base Calibration */
+        .combined-calib-inner {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             height: 100%;
             justify-content: center;
+        }
+
+        .calib-row-detect {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .calib-divider {
+            height: 1px;
+            background-color: var(--panel-border);
+            margin: 2px 0;
+        }
+
+        .calib-row-base {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .btn-detect-bins {
@@ -439,13 +470,14 @@
             color: var(--accent-yellow);
             border: 2px solid var(--accent-yellow);
             border-radius: 6px;
-            padding: 12px 14px;
-            font-size: 13px;
+            padding: 9px 12px;
+            font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             cursor: pointer;
             text-align: center;
+            transition: all 0.15s;
         }
         .btn-detect-bins:hover {
             background-color: var(--accent-yellow);
@@ -459,15 +491,6 @@
             font-family: monospace;
         }
 
-        /* Box 3: Set Base Point */
-        .base-box-inner {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            height: 100%;
-            justify-content: center;
-        }
-
         .base-input-row {
             display: flex;
             gap: 6px;
@@ -479,10 +502,10 @@
             background-color: var(--box-bg-dark);
             border: 2px solid var(--panel-border);
             border-radius: 6px;
-            padding: 8px;
+            padding: 7px 8px;
             color: var(--accent-cyan);
             font-family: monospace;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             outline: none;
             text-align: center;
@@ -496,11 +519,12 @@
             color: var(--accent-cyan);
             border: 2px solid var(--accent-cyan);
             border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 12px;
+            padding: 7px 12px;
+            font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
             cursor: pointer;
+            transition: all 0.15s;
         }
         .btn-set-base:hover {
             background-color: var(--accent-cyan);
@@ -927,10 +951,11 @@
             </div>
         </div>
 
-        <!-- 2. MIDDLE ROW: 4 Control Boxes (Upload, Detect Bins, Set Base, Actions) -->
+        <!-- 2. MIDDLE ROW: 3 Control Boxes (Capture, Combined Detection & Base, Quick Actions) -->
         <div class="middle-controls-grid">
             <!-- Box 1: Camera & Gallery Upload -->
             <div class="control-box">
+                <div class="control-box-header">📷 IMAGE SOURCE</div>
                 <div class="upload-box-inner">
                     <div class="upload-dual-row">
                         <button class="btn-cam-action" onclick="openCameraPicker()">
@@ -950,40 +975,46 @@
                 </div>
             </div>
 
-            <!-- Box 2: DETECT BIN BOX (Click to detect/refresh bins) -->
+            <!-- Box 2: COMBINED DETECTION & BASE CALIBRATION -->
             <div class="control-box">
-                <div class="detect-box-inner">
-                    <button class="btn-detect-bins" onclick="triggerDetectBins()">
-                        🔍 DETECT BINS (REFRESH)
-                    </button>
-                    <div class="detect-bin-status" id="binDetectionStatus">Colored Bins: Scanning</div>
-                </div>
-            </div>
-
-            <!-- Box 3: SET BASE point -->
-            <div class="control-box">
-                <div class="base-box-inner">
-                    <div class="base-input-row">
-                        <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
-                        <button class="btn-set-base" onclick="applyManualBasePoint()">SET</button>
+                <div class="control-box-header">🎯 DETECTION & BASE CALIBRATION</div>
+                <div class="combined-calib-inner">
+                    <!-- Detect & Refresh Bins -->
+                    <div class="calib-row-detect">
+                        <button class="btn-detect-bins" onclick="triggerDetectBins()">
+                            🔍 DETECT BINS (REFRESH)
+                        </button>
+                        <div class="detect-bin-status" id="binDetectionStatus">Colored Bins: Scanning</div>
                     </div>
-                    <div class="base-status-text" id="baseStatusLabel">SET BASE (Or Tap Image)</div>
+
+                    <div class="calib-divider"></div>
+
+                    <!-- Set Robot Base Point -->
+                    <div class="calib-row-base">
+                        <div class="base-input-row">
+                            <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
+                            <button class="btn-set-base" onclick="applyManualBasePoint()">SET BASE</button>
+                        </div>
+                        <div class="base-status-text" id="baseStatusLabel">SET BASE (Or Tap Image)</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Box 4: Sorting & Emergency Buttons -->
+            <!-- Box 3: Quick Sorting & Emergency Buttons -->
             <div class="control-box">
+                <div class="control-box-header">⚡ QUICK SORT & SAFETY</div>
                 <div class="actions-box-inner">
                     <div class="box-row-top">
-                        <button class="btn-box-action" onclick="sortToBox(1)">TO box 1</button>
-                        <button class="btn-box-action" onclick="sortToBox(2)">to box2</button>
-                        <button class="btn-box-action" onclick="sortToBox(3)">to box3</button>
+                        <button class="btn-box-action" onclick="sortToBox(1)">TO BOX 1</button>
+                        <button class="btn-box-action" onclick="sortToBox(2)">TO BOX 2</button>
+                        <button class="btn-box-action" onclick="sortToBox(3)">TO BOX 3</button>
                     </div>
                     <div class="box-row-bottom">
-                        <button class="btn-cancel" onclick="cancelAction()">Cancel</button>
-                        <button class="btn-abort" onclick="abortEmergency()">abort</button>
+                        <button class="btn-cancel" onclick="cancelAction()">CANCEL</button>
+                        <button class="btn-abort" onclick="abortEmergency()">ABORT</button>
                     </div>
                 </div>
+            </div>
         </div>
 
         <!-- 2.5 INTERMEDIATE: PICK & PLACE MOTION STEPPER & STATUS BAR -->
