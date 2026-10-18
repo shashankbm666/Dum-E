@@ -1094,6 +1094,15 @@
             from { opacity: 0; transform: translateY(-4px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes pulseHighlight {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+        .pulse-highlight {
+            animation: pulseHighlight 0.8s ease infinite;
+        }
     </style>
 </head>
 <body>
@@ -1203,7 +1212,7 @@
                     <div class="calib-sub-block">
                         <div class="base-coord-row">
                             <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
-                            <button class="btn-primary-cyan" style="padding: 8px 12px; font-size: 11px;" onclick="applyManualBasePoint()">Set Base</button>
+                            <button class="btn-primary-cyan" id="btnSetBase" style="padding: 8px 12px; font-size: 11px;" onclick="applyManualBasePoint()">Set Base</button>
                         </div>
                         <div class="base-status-hint" id="baseStatusLabel">Base Reference: (400, 570) • Or Tap Image</div>
                     </div>
@@ -1440,9 +1449,10 @@
             }
         }
 
-        // Tap on Image to Set Base Point
-        async function handleImageTap(e) {
+        // Tap on Image to Stage Base Point (User then presses 'Set Base' to confirm)
+        function handleImageTap(e) {
             const img = document.getElementById('annotatedImage');
+            if (!img || !img.naturalWidth) return;
             const rect = img.getBoundingClientRect();
 
             // Calculate click position relative to the image element
@@ -1455,33 +1465,38 @@
             const pixelX = Math.round(clickX * scaleX);
             const pixelY = Math.round(clickY * scaleY);
 
-            document.getElementById('telemetryStatus').innerText = `SETTING BASE AT (${pixelX}, ${pixelY})...`;
+            // Stage coordinates into the input box
+            const input = document.getElementById('basePointInput');
+            if (input) input.value = `${pixelX}, ${pixelY}`;
 
-            try {
-                const res = await fetch('/api/set_base_tap', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pixel_x: pixelX, pixel_y: pixelY })
-                });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    renderResults(data);
-                    document.getElementById('basePointInput').value = `${pixelX}, ${pixelY}`;
-                    document.getElementById('baseStatusLabel').innerText = `Base Point: (${pixelX}, ${pixelY}) px`;
-                    document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
-                    document.getElementById('telemetryStatus').innerText = `BASE SET AT (${pixelX}, ${pixelY}) - IK RECALCULATED`;
-                }
-            } catch (err) {
-                console.error("Error setting base from tap:", err);
+            // Provide visual confirmation that coordinates are staged
+            const statusLabel = document.getElementById('baseStatusLabel');
+            if (statusLabel) {
+                statusLabel.innerHTML = `Selected: <span style="color:var(--accent-cyan); font-weight:700;">(${pixelX}, ${pixelY}) px</span> • Click <b style="color:#ffffff;">Set Base</b> to apply`;
+                statusLabel.style.color = "var(--text-primary)";
+            }
+
+            const telemetry = document.getElementById('telemetryStatus');
+            if (telemetry) {
+                telemetry.innerText = `SELECTED (${pixelX}, ${pixelY}). PRESS 'SET BASE' TO COMMIT.`;
+            }
+
+            // Pulse the Set Base button so the operator knows to confirm
+            const setBtn = document.getElementById('btnSetBase');
+            if (setBtn) {
+                setBtn.classList.add('pulse-highlight');
+                setTimeout(() => setBtn.classList.remove('pulse-highlight'), 2000);
             }
         }
 
-        // Manual Set Base Point
+        // Commit and apply the Base Reference Point (Recalculates IK on server, does NOT move servos)
         async function applyManualBasePoint() {
             const raw = document.getElementById('basePointInput').value.split(',');
             if (raw.length < 2) return;
             const px = parseInt(raw[0].trim());
             const py = parseInt(raw[1].trim());
+
+            document.getElementById('telemetryStatus').innerText = `CALCULATING BASE AT (${px}, ${py})...`;
 
             try {
                 const res = await fetch('/api/set_base_tap', {
@@ -1491,12 +1506,28 @@
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    renderResults(data);
-                    document.getElementById('baseStatusLabel').innerText = `Base Point: (${px}, ${py}) px`;
+                    // Update the image with the new base marker and recomputed IK overlays
+                    const img = document.getElementById('annotatedImage');
+                    if (img && data.image_data) img.src = data.image_data;
+
+                    const numCoins = data.coins_found || 0;
+                    const numBins = data.bins_found || 0;
+                    document.getElementById('coinsCountTag').innerText = `${numCoins} COIN${numCoins === 1 ? '' : 'S'} • ${numBins} BIN${numBins === 1 ? '' : 'S'}`;
+
+                    if (data.bins && data.bins.length > 0) {
+                        const binNames = data.bins.map(b => b.name).join(', ');
+                        document.getElementById('binDetectionStatus').innerText = binNames;
+                        document.getElementById('binDetectionStatus').style.color = "var(--accent-green)";
+                    }
+
+                    document.getElementById('baseStatusLabel').innerText = `Base Set: (${px}, ${py}) px`;
                     document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
+                    document.getElementById('telemetryStatus').innerText = `BASE SET AT (${px}, ${py}) — IK RECALCULATED`;
+                    // Zero servo commands are sent. Physical arm remains stationary!
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Error setting base point:", e);
+                document.getElementById('telemetryStatus').innerText = "ERROR SETTING BASE POINT";
             }
         }
 
@@ -1518,7 +1549,7 @@
             }
         }
 
-        // Render detected items on screen
+        // Render detected items on screen (pure visual update, never moves servos)
         function renderResults(data) {
             if (!data || data.status !== 'success') return;
 
@@ -1544,27 +1575,25 @@
             if (data.base_pixel) {
                 document.getElementById('basePointInput').value = `${data.base_pixel.x}, ${data.base_pixel.y}`;
             }
-
-            // If coins exist, update sliders to the primary target
-            if (data.targets && data.targets.length > 0 && data.targets[0].ik) {
-                const j = data.targets[0].ik.joints;
-                updateSlidersDisplay(j);
-            }
         }
 
+        // Updates UI slider positions and degree values WITHOUT commanding servos
         function updateSlidersDisplay(j) {
             if (!j) return;
             if (j.base !== undefined) {
-                document.getElementById('joint0').value = j.base;
-                onSliderMove(0, j.base);
+                const bVal = parseInt(j.base);
+                document.getElementById('joint0').value = bVal;
+                document.getElementById('baseVal').innerText = bVal + '°';
             }
             if (j.shoulder !== undefined) {
-                document.getElementById('joint1').value = j.shoulder;
-                onSliderMove(1, j.shoulder);
+                const sVal = parseInt(j.shoulder);
+                document.getElementById('joint1').value = sVal;
+                document.getElementById('shoulderVal').innerText = sVal + '°';
             }
             if (j.elbow !== undefined) {
-                document.getElementById('joint2').value = j.elbow;
-                onSliderMove(2, j.elbow);
+                const eVal = parseInt(j.elbow);
+                document.getElementById('joint2').value = eVal;
+                document.getElementById('elbowVal').innerText = eVal + '°';
             }
         }
 
