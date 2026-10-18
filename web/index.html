@@ -118,6 +118,47 @@
             gap: 12px;
         }
 
+        .mobile-link-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .telemetry-link-text {
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: 0.02em;
+            transition: color 0.15s ease;
+        }
+        .telemetry-link-text:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        .btn-copy-link {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 3px 5px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.15s ease, background-color 0.15s ease;
+        }
+        .btn-copy-link:hover {
+            color: #ffffff;
+            background-color: var(--surface-card-hover);
+        }
+
         .esp-ip-pill {
             display: flex;
             align-items: center;
@@ -1082,6 +1123,7 @@
             body { padding: 12px 14px 40px; }
             .deck-header { flex-direction: column; align-items: flex-start; gap: 12px; }
             .header-telemetry-bar { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+            .mobile-link-pill { flex: 1; min-width: 220px; }
             .esp-ip-pill { flex: 1; min-width: 180px; }
             .image-display-frame { height: 280px; }
             .middle-controls-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -1120,6 +1162,19 @@
         </div>
 
         <div class="header-telemetry-bar">
+            <!-- Dynamic Website Working Link for Mobile / Phone Access -->
+            <div class="mobile-link-pill" id="mobileLinkPill" title="Live working link to access Dum-E from your phone">
+                <span class="telemetry-label">WEBSITE WORKING LINK</span>
+                <a id="mobileWebLink" href="#" target="_blank" class="telemetry-link-text">Detecting link...</a>
+                <button class="btn-copy-link" onclick="copyMobileLink(event)" title="Copy Working Link">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span id="copyLinkFeedback" style="display:none; font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--accent-green);">COPIED</span>
+                </button>
+            </div>
+
             <div class="esp-ip-pill">
                 <span class="telemetry-label">ESP32 IP</span>
                 <input type="text" id="espIpInput" class="telemetry-ip-input" value="http://10.34.233.78" placeholder="http://10.X.X.X" onchange="updateEspIp()">
@@ -1482,6 +1537,53 @@
             ESP_IP = val;
             localStorage.setItem("ESP_IP", ESP_IP);
             checkConnection();
+        }
+
+        // Dynamic Network Detection: Automatically fetches PC's active Wi-Fi IP and working mobile link
+        let activeMobileUrl = window.location.origin + "/";
+
+        async function initNetworkInfo() {
+            try {
+                const res = await fetch('/api/network_info');
+                const data = await res.json();
+                if (data && data.mobile_url) {
+                    activeMobileUrl = data.mobile_url;
+                    const linkEl = document.getElementById('mobileWebLink');
+                    if (linkEl) {
+                        linkEl.href = activeMobileUrl;
+                        linkEl.innerText = activeMobileUrl;
+                    }
+                }
+            } catch (err) {
+                const fallbackUrl = window.location.origin + "/";
+                const linkEl = document.getElementById('mobileWebLink');
+                if (linkEl) {
+                    linkEl.href = fallbackUrl;
+                    linkEl.innerText = fallbackUrl;
+                }
+            }
+        }
+        initNetworkInfo();
+
+        function copyMobileLink(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const textToCopy = activeMobileUrl;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const fb = document.getElementById('copyLinkFeedback');
+                    if (fb) {
+                        fb.style.display = 'inline';
+                        setTimeout(() => { fb.style.display = 'none'; }, 2000);
+                    }
+                }).catch(() => {
+                    prompt("Copy this working link to open on phone:", textToCopy);
+                });
+            } else {
+                prompt("Copy this working link to open on phone:", textToCopy);
+            }
         }
 
         // Upload and process image

@@ -71,5 +71,14 @@ class TestApiEndpoints(unittest.TestCase):
         data = res.get_json()
         self.assertEqual(data["status"], "success")
 
+    def test_network_info_endpoint(self):
+        res = self.stream_client.get('/api/network_info')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("mobile_url", data)
+        self.assertIn("local_ip", data)
+        self.assertIn("port", data)
+
 if __name__ == '__main__':
     unittest.main()

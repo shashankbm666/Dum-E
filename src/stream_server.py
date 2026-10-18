@@ -12,6 +12,7 @@ Features:
 import os
 import sys
 import time
+import socket
 import base64
 import math
 import cv2
@@ -485,6 +486,37 @@ def get_latest_detection():
 def get_image_version():
     """Returns current image version number for cross-device sync polling."""
     return jsonify({"version": image_version})
+
+def get_local_ip():
+    """Detects active local Wi-Fi or LAN IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return 'localhost'
+
+@app.route('/api/network_info', methods=['GET'])
+def get_network_info():
+    """Returns local LAN IP, port, and live working mobile URL for 1-click access."""
+    port = 8000
+    try:
+        host = request.host
+        if ':' in host:
+            port = int(host.split(':')[1])
+    except Exception:
+        pass
+
+    local_ip = get_local_ip()
+    mobile_url = f"http://{local_ip}:{port}/"
+    return jsonify({
+        "status": "success",
+        "local_ip": local_ip,
+        "port": port,
+        "mobile_url": mobile_url
+    })
 
 # ==========================================
 # Smooth Motion Engine & Trajectory Tracking
