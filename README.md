@@ -1,4 +1,4 @@
-# Dum-E: 4-DOF Robotic Arm & Computer Vision Command Center
+# Dum-E: 4-DOF Robotic Arm & Vision Dashboard
 
 [![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![ESP32](https://img.shields.io/badge/ESP32-Arduino-orange.svg)](https://www.espressif.com/)
@@ -10,7 +10,7 @@ An end-to-end autonomous robotic arm pick-and-place system featuring:
 - **ESP32 Asynchronous REST API** running over Wi-Fi.
 - **Computer Vision (OpenCV)**: Circular coin detection and rectangular colored sorting bin detection (Green, Red, Black, Blue, Yellow).
 - **3D Inverse Kinematics (IK)** with interactive tap-to-set base reference origin.
-- **Anti-Gravity Web Command Center**: Modern, high-contrast, flat solid-color dashboard accessible from any desktop or mobile browser.
+- **Dum-E Web Dashboard**: Modern, high-contrast dashboard accessible from any desktop or mobile browser.
 - **Hardware Simulator / Mock ESP32**: Full offline testing support with zero physical hardware connected.
 
 ---
@@ -224,7 +224,7 @@ This verifies:
 │   ├── test_ik.py               # Unit tests for kinematics solvers
 │   ├── test_vision.py           # Unit tests for coin and bin detection
 │   └── test_api.py              # Integration tests for REST endpoints
-├── index.html                   # Anti-Gravity solid-color responsive UI
+├── index.html                   # Dum-E responsive UI
 ├── run_server.py                # Unified launcher for Vision Server & Mock Hardware
 ├── requirements.txt             # Python dependencies
 ├── setup.bat                    # 1-Click setup installer for Windows

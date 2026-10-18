@@ -1,5 +1,5 @@
 """
-Robotic Vision & Image Processing Server (OpenCV + Flask)
+Dum-E Vision & Image Processing Server (OpenCV + Flask)
 ----------------------------------------------------------
 Features:
   - Detects Circular Coins (Hough Circles).
@@ -500,8 +500,8 @@ def health():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8000))
     print("=" * 60)
-    print(f" [VISION SERVER] Running on http://localhost:{port}")
-    print(f" [DETECT BINS]   POST http://localhost:{port}/api/detect_bins")
-    print(f" [TAP BASE]      POST http://localhost:{port}/api/set_base_tap")
+    print(f" [DUM-E VISION] Running on http://localhost:{port}")
+    print(f" [DUM-E BINS]   POST http://localhost:{port}/api/detect_bins")
+    print(f" [DUM-E BASE]      POST http://localhost:{port}/api/set_base_tap")
     print("=" * 60)
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

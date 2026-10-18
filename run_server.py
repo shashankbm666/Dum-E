@@ -1,5 +1,5 @@
 """
-Master Runner: Anti-Gravity Robotic Arm Command Center
+Master Runner: Dum-E
 -------------------------------------------------------
 Runs the Vision Stream Server and optional Mock ESP32 Hardware Simulator concurrently.
 
@@ -22,7 +22,7 @@ def run_mock_server(port):
     mock_app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 def main():
-    parser = argparse.ArgumentParser(description="Anti-Gravity Robotic Arm Command Center")
+    parser = argparse.ArgumentParser(description="Dum-E")
     parser.add_argument("--port", type=int, default=8000, help="Vision server port (default: 8000)")
     parser.add_argument("--mock-port", type=int, default=8080, help="ESP32 mock hardware port (default: 8080)")
     parser.add_argument("--no-mock", action="store_true", help="Disable the local ESP32 mock server")
@@ -37,7 +37,7 @@ def main():
         os.environ["ESP32_IP"] = args.esp_ip
 
     print("=" * 64)
-    print("   ANTI-GRAVITY ROBOTIC ARM COMMAND CENTER")
+    print("   DUM-E")
     print("=" * 64)
 
     # Start Mock ESP32 server in daemon thread if enabled
@@ -71,7 +71,7 @@ def main():
     try:
         stream_app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False, threaded=True)
     except KeyboardInterrupt:
-        print("\n[SYSTEM] Shutting down Anti-Gravity Command Center.")
+        print("\n[SYSTEM] Shutting down Dum-E.")
 
 if __name__ == '__main__':
     main()
