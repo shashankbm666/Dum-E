@@ -25,9 +25,9 @@ An end-to-end autonomous robotic arm pick-and-place system featuring:
    git clone https://github.com/shashankbm666/Dum-E.git
    cd Dum-E
    ```
-2. Double-click **`setup.bat`**.  
+2. Double-click **`scripts\setup.bat`**.  
    *(This automatically creates `.venv` and installs all dependencies)*.
-3. Double-click **`run.bat`**.  
+3. Double-click **`scripts\run.bat`**.  
    *(This starts the Vision Server + Hardware Simulator and opens your web browser to `http://localhost:8000/`)*.
 
 #### On Linux / macOS / Raspberry Pi:
@@ -38,12 +38,12 @@ An end-to-end autonomous robotic arm pick-and-place system featuring:
    ```
 2. Make scripts executable and run setup:
    ```bash
-   chmod +x setup.sh run.sh
-   ./setup.sh
+   chmod +x scripts/setup.sh scripts/run.sh
+   ./scripts/setup.sh
    ```
 3. Launch the application:
    ```bash
-   ./run.sh
+   ./scripts/run.sh
    ```
 
 ---
@@ -94,13 +94,13 @@ If you prefer installing manually using the terminal:
 You can control the robotic arm and use your smartphone's camera to snap photos of the workbench:
 
 1. Ensure your phone and the computer are connected to the **same Wi-Fi network**.
-2. Run `python run_server.py` on your computer. Look for the printed mobile URL:
+2. Launch the server via `scripts\run.bat` (Windows) or `./scripts/run.sh` (Linux/macOS). Look for the printed mobile URL:
    ```
    [DESKTOP]   Local PC URL:   http://localhost:8000/
    [MOBILE]    Phone / Wi-Fi:  http://192.168.X.X:8000/
    ```
 3. Open `http://<YOUR_PC_IP>:8000/` in Safari or Chrome on your phone.
-4. Tap **`Upload the pic`** to snap a photo with your phone's camera.
+4. Tap **`Snap Photo`** or **`Gallery`** to upload a photo of the workbench from your phone's camera.
 5. The PC will process the image, detect coins and colored bins, and display the results on your phone!
 
 > [!TIP]
@@ -216,8 +216,10 @@ This verifies:
 ## 📁 Repository Structure
 
 ```
+Dum-E/
 ├── firmware/
-│   └── esp32_firmware.ino       # ESP32 Arduino sketch (servos + relay + AsyncWebServer)
+│   └── esp32_firmware/
+│       └── esp32_firmware.ino   # ESP32 Arduino sketch (servos + relay + AsyncWebServer)
 ├── src/
 │   ├── inverse_kinematics.py    # 2D & 3D Inverse Kinematics engine + tap-to-set solver
 │   ├── stream_server.py         # OpenCV vision pipeline, bin detection, and Flask API
@@ -226,13 +228,23 @@ This verifies:
 │   ├── test_ik.py               # Unit tests for kinematics solvers
 │   ├── test_vision.py           # Unit tests for coin and bin detection
 │   └── test_api.py              # Integration tests for REST endpoints
-├── index.html                   # Dum-E responsive UI
+├── web/
+│   └── index.html               # Dum-E mission control dashboard
+├── scripts/
+│   ├── setup.bat                # 1-Click setup installer for Windows
+│   ├── run.bat                  # 1-Click launcher for Windows
+│   ├── setup.sh                 # 1-Click setup script for Linux/macOS
+│   ├── run.sh                   # 1-Click launcher for Linux/macOS
+│   └── push.bat                 # Quick git push helper
+├── tools/
+│   ├── taste-skill/             # Frontend design skill (AI tooling)
+│   └── ponytail/                # Code quality skill (AI tooling)
+├── assets/
+│   └── test_badge.png           # CI badge asset
+├── .agents/                     # Antigravity agent discovery (kept at root)
 ├── run_server.py                # Unified launcher for Vision Server & Mock Hardware
 ├── requirements.txt             # Python dependencies
-├── setup.bat                    # 1-Click setup installer for Windows
-├── run.bat                      # 1-Click launcher for Windows
-├── setup.sh                     # 1-Click setup script for Linux/macOS
-├── run.sh                       # 1-Click launcher for Linux/macOS
+├── LICENSE                      # MIT License
 └── README.md                    # Project documentation
 ```
 
