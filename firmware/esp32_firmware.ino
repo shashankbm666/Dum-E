@@ -20,8 +20,8 @@
 // Network Configuration
 // REPLACE WITH YOUR WIFI CREDENTIALS
 // ==========================================
-const char* ssid     = "YOUR_WIFI_NAME";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid     = "Samung";
+const char* password = "12345678";
 
 // ==========================================
 // Hardware Pin Mapping (ESP32 DevKit v1)

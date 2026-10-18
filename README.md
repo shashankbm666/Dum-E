@@ -142,8 +142,8 @@ You can control the robotic arm and use your smartphone's camera to snap photos 
 5. Open [`firmware/esp32_firmware.ino`](firmware/esp32_firmware.ino) in Arduino IDE.
 6. Edit your Wi-Fi credentials on lines 23-24:
    ```cpp
-   const char* ssid     = "YOUR_WIFI_NAME";
-   const char* password = "YOUR_WIFI_PASSWORD";
+   const char* ssid     = "Samung";
+   const char* password = "12345678";
    ```
 7. Select your board (e.g., **ESP32 Dev Module**) and USB COM port, then click **Upload**.
 8. Open the **Serial Monitor** at **115200 baud** to see the assigned local IP address (e.g., `http://192.168.1.42`).
