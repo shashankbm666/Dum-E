@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 import requests
 import threading
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 
 # Add parent directory to path to allow importing inverse_kinematics
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -27,7 +27,7 @@ from src.inverse_kinematics import ArmKinematics
 app = Flask(__name__, static_folder="../static", template_folder="../templates")
 
 # Configuration Defaults
-ESP32_IP = os.environ.get("ESP32_IP", "http://localhost:8080")
+ESP32_IP = os.environ.get("ESP32_IP", "http://10.34.233.78")
 
 # Vision Hough Circles Tuning Parameters
 vision_config = {
@@ -358,8 +358,49 @@ def index():
     html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../index.html"))
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
-            return f.read(), 200, {"Content-Type": "text/html"}
+            resp = make_response(f.read())
+            resp.headers["Content-Type"] = "text/html; charset=utf-8"
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
     return "<h1>Vision Server Active</h1>"
+
+@app.route('/api/joint', methods=['POST'])
+def proxy_joint():
+    """Proxy joint control to ESP32 without CORS/PNA issues on mobile browsers."""
+    data = request.get_json(silent=True) or {}
+    esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    joint = int(data.get("joint", 0))
+    angle = int(data.get("angle", 90))
+    try:
+        r = requests.post(f"{esp}/joint", json={"joint": joint, "angle": angle}, timeout=0.8)
+        return jsonify(r.json()), r.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/status', methods=['GET'])
+@app.route('/api/esp_status', methods=['GET', 'POST'])
+def proxy_status():
+    """Proxy hardware status from ESP32."""
+    esp = request.args.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    try:
+        r = requests.get(f"{esp}/status", timeout=0.8)
+        return jsonify(r.json()), r.status_code
+    except Exception as e:
+        return jsonify({"status": "offline", "error": str(e)}), 503
+
+@app.route('/api/grip', methods=['POST'])
+def proxy_grip():
+    """Proxy electromagnet toggle to ESP32."""
+    data = request.get_json(silent=True) or {}
+    esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    state = data.get("state", "open")
+    try:
+        r = requests.post(f"{esp}/grip", json={"state": state}, timeout=0.8)
+        return jsonify(r.json()), r.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/upload', methods=['POST'])
 def upload_image():

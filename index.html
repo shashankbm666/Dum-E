@@ -951,8 +951,12 @@
             const dot = document.getElementById('pingDot');
             const statusText = document.getElementById('pingStatus');
             try {
-                const res = await fetch(ESP_IP + '/status', { method: 'GET', mode: 'cors' });
-                if (res.ok) {
+                // Try proxy first (avoids mobile browser PNA/CORS blocks), then fallback to direct
+                let res = await fetch('/api/status?esp_ip=' + encodeURIComponent(ESP_IP)).catch(() => null);
+                if (!res || !res.ok) {
+                    res = await fetch(ESP_IP + '/status', { method: 'GET', mode: 'cors' }).catch(() => null);
+                }
+                if (res && res.ok) {
                     dot.className = "status-dot online";
                     statusText.innerText = "ONLINE";
                     statusText.style.color = "var(--accent-green)";
@@ -983,15 +987,29 @@
 
         async function postData(endpoint, data) {
             try {
-                const res = await fetch(ESP_IP + endpoint, {
+                // Route through server proxy /api to avoid cross-origin / Brave shields blocks
+                const proxyUrl = endpoint.startsWith('/api') ? endpoint : ('/api' + endpoint);
+                const payload = Object.assign({ esp_ip: ESP_IP }, data);
+                const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
-                return await res.json();
+                if (res.ok) return await res.json();
+                throw new Error("Proxy error");
             } catch (e) {
-                console.error("Communication error:", e);
-                return null;
+                // Fallback to direct call
+                try {
+                    const directRes = await fetch(ESP_IP + endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    return await directRes.json();
+                } catch (err2) {
+                    console.error("Communication error:", e, err2);
+                    return null;
+                }
             }
         }
 
