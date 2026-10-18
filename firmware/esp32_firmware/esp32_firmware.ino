@@ -95,19 +95,29 @@ void setup() {
     ESP32PWM::allocateTimer(2);
 
     // Initialize Servos with standard 50Hz and 500-2400us pulse widths for MG90S
+    // Staggered initialization ensures servos reliably drive to 90° without overloading power supply
     baseServo.setPeriodHertz(50);
     baseServo.attach(BASE_PIN, 500, 2400);
-    baseServo.write(baseAngle);
+    baseServo.write(90);
+    currentBase = 90;
+    targetBase = 90;
+    delay(150);
 
     shoulderServo.setPeriodHertz(50);
     shoulderServo.attach(SHOULDER_PIN, 500, 2400);
-    shoulderServo.write(shoulderAngle);
+    shoulderServo.write(90);
+    currentShoulder = 90;
+    targetShoulder = 90;
+    delay(150);
 
     elbowServo.setPeriodHertz(50);
     elbowServo.attach(ELBOW_PIN, 500, 2400);
-    elbowServo.write(180 - elbowAngle); // Inverted: 0 deg = back, 180 deg = front
+    elbowServo.write(180 - 90); // 90 degrees neutral (inverted: 0=back, 180=front)
+    currentElbow = 90;
+    targetElbow = 90;
+    delay(150);
 
-    Serial.println("[SYSTEM] 3 Servos centered at 90 degrees (Base:13, Shoulder:14, Elbow:27, Magnet:26).");
+    Serial.println("[SYSTEM] Startup: Base, Shoulder, and Elbow positioned to 90 degrees neutral.");
 
     // Connect to Wi-Fi
     Serial.printf("[WIFI] Connecting to %s ", ssid);

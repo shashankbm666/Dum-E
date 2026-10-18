@@ -946,6 +946,7 @@
         }
 
         // Hardware Communication
+        let initialSyncDone = false;
         async function checkConnection() {
             const dot = document.getElementById('pingDot');
             const statusText = document.getElementById('pingStatus');
@@ -955,6 +956,19 @@
                     dot.className = "status-dot online";
                     statusText.innerText = "ONLINE";
                     statusText.style.color = "var(--accent-green)";
+
+                    if (!initialSyncDone) {
+                        initialSyncDone = true;
+                        const data = await res.json();
+                        if (data && data.base !== undefined) {
+                            document.getElementById('joint0').value = data.base;
+                            document.getElementById('baseVal').innerText = data.base + '°';
+                            document.getElementById('joint1').value = data.shoulder;
+                            document.getElementById('shoulderVal').innerText = data.shoulder + '°';
+                            document.getElementById('joint2').value = data.elbow;
+                            document.getElementById('elbowVal').innerText = data.elbow + '°';
+                        }
+                    }
                 } else {
                     throw new Error();
                 }
