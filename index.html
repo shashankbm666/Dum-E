@@ -229,23 +229,184 @@
             justify-content: center;
         }
 
-        .btn-upload-big {
+        .upload-dual-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-cam-action {
             background-color: var(--accent-cyan);
             color: #000000;
             border: 2px solid var(--accent-cyan);
             border-radius: 6px;
-            padding: 12px 14px;
-            font-size: 14px;
+            padding: 12px 6px;
+            font-size: 13px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.03em;
             cursor: pointer;
             text-align: center;
             transition: background-color 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
-        .btn-upload-big:hover {
+        .btn-cam-action:hover {
             background-color: var(--accent-cyan-hover);
             border-color: var(--accent-cyan-hover);
+        }
+
+        .btn-gal-action {
+            background-color: var(--box-bg);
+            color: var(--accent-cyan);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 12px 6px;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .btn-gal-action:hover {
+            background-color: rgba(0, 229, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .placeholder-actions-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .btn-ph-cam, .btn-ph-gal {
+            background-color: var(--box-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ph-cam:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background-color: #1f2937;
+        }
+        .btn-ph-gal:hover {
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+            background-color: #1f2937;
+        }
+
+        /* Camera Live Modal */
+        .camera-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .camera-modal-content {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .camera-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--accent-cyan);
+        }
+
+        .camera-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .camera-close-btn:hover {
+            color: var(--accent-red);
+        }
+
+        .camera-video-wrap {
+            width: 100%;
+            height: 320px;
+            background-color: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-video-wrap video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-modal-actions {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .btn-snap-modal {
+            flex: 2;
+            background-color: var(--accent-cyan);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-snap-modal:hover {
+            background-color: var(--accent-cyan-hover);
+        }
+
+        .btn-cancel-modal {
+            flex: 1;
+            background-color: var(--box-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
         }
 
         .btn-sample-demo {
@@ -743,9 +904,13 @@
         <div class="image-window-card">
             <div class="image-display-frame" id="displayFrame">
                 <!-- Shown when NO image is loaded -->
-                <div class="no-image-placeholder" id="noImagePlaceholder" onclick="document.getElementById('imageFileInput').click()">
+                <div class="no-image-placeholder" id="noImagePlaceholder">
                     <div class="no-image-title">NO IMAGE</div>
-                    <div class="no-image-subtitle">CLICK HERE OR USE THE BUTTON BELOW TO UPLOAD</div>
+                    <div class="no-image-subtitle">CLICK BELOW TO SNAP A PICTURE OR CHOOSE FROM GALLERY</div>
+                    <div class="placeholder-actions-row">
+                        <button class="btn-ph-cam" onclick="openCameraPicker(event)">📸 SNAP PHOTO</button>
+                        <button class="btn-ph-gal" onclick="openGalleryPicker(event)">🖼️ GALLERY</button>
+                    </div>
                 </div>
 
                 <!-- Displayed when image is uploaded (Tappable to set Base Reference) -->
@@ -764,16 +929,24 @@
 
         <!-- 2. MIDDLE ROW: 4 Control Boxes (Upload, Detect Bins, Set Base, Actions) -->
         <div class="middle-controls-grid">
-            <!-- Box 1: Upload the pic button -->
+            <!-- Box 1: Camera & Gallery Upload -->
             <div class="control-box">
                 <div class="upload-box-inner">
-                    <button class="btn-upload-big" onclick="document.getElementById('imageFileInput').click()">
-                        Upload the pic
-                    </button>
+                    <div class="upload-dual-row">
+                        <button class="btn-cam-action" onclick="openCameraPicker()">
+                            📸 CAMERA
+                        </button>
+                        <button class="btn-gal-action" onclick="openGalleryPicker()">
+                            🖼️ GALLERY
+                        </button>
+                    </div>
                     <button class="btn-sample-demo" onclick="loadSampleDemoImage()">
                         Load Sample Workbench Pic
                     </button>
-                    <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(this.files)">
+                    <!-- Camera Input: Direct camera capture on mobile phones -->
+                    <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this.files)">
+                    <!-- Gallery Input: Photo library / file manager -->
+                    <input type="file" id="galleryFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(this.files)">
                 </div>
             </div>
 
@@ -1344,9 +1517,102 @@
             }
         }
 
+        // Camera and Gallery Handlers
+        let liveVideoStream = null;
+
+        function openCameraPicker(e) {
+            if (e) e.stopPropagation();
+            // On mobile devices (Android/iOS), input[capture=environment] opens native camera app immediately
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+            if (isMobile) {
+                const camInput = document.getElementById('cameraFileInput');
+                if (camInput) {
+                    camInput.value = '';
+                    camInput.click();
+                    return;
+                }
+            }
+            // On desktop/laptop, open live webcam capture modal
+            openLiveCameraModal();
+        }
+
+        function openGalleryPicker(e) {
+            if (e) e.stopPropagation();
+            const galInput = document.getElementById('galleryFileInput');
+            if (galInput) {
+                galInput.value = '';
+                galInput.click();
+            }
+        }
+
+        async function openLiveCameraModal() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+            if (!modal || !video) return;
+            modal.style.display = 'flex';
+            try {
+                liveVideoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = liveVideoStream;
+            } catch (err) {
+                console.warn("Direct webcam access not available, falling back to camera file input:", err);
+                closeCameraModal();
+                const camInput = document.getElementById('cameraFileInput');
+                if (camInput) camInput.click();
+            }
+        }
+
+        function closeCameraModal() {
+            const modal = document.getElementById('cameraModal');
+            if (modal) modal.style.display = 'none';
+            if (liveVideoStream) {
+                liveVideoStream.getTracks().forEach(track => track.stop());
+                liveVideoStream = null;
+            }
+        }
+
+        function captureLivePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            if (!video || !canvas) return;
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+                    handleFileSelect([file]);
+                    closeCameraModal();
+                }
+            }, 'image/jpeg', 0.95);
+        }
+
         // Periodic checks
         setInterval(checkConnection, 3000);
         checkConnection();
     </script>
+
+    <!-- Live Camera Capture Modal -->
+    <div id="cameraModal" class="camera-modal" style="display: none;">
+        <div class="camera-modal-content">
+            <div class="camera-modal-header">
+                <span>📸 LIVE CAMERA CAPTURE</span>
+                <button class="camera-close-btn" onclick="closeCameraModal()">✕</button>
+            </div>
+            <div class="camera-video-wrap">
+                <video id="cameraVideo" autoplay playsinline muted></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+            </div>
+            <div class="camera-modal-actions">
+                <button class="btn-snap-modal" onclick="captureLivePhoto()">📸 CAPTURE PHOTO</button>
+                <button class="btn-cancel-modal" onclick="closeCameraModal()">CANCEL</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
