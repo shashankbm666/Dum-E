@@ -574,7 +574,7 @@
         <div class="header-status-bar">
             <div class="esp-input-box">
                 <label for="espIpInput">ESP32 IP:</label>
-                <input type="text" id="espIpInput" value="http://localhost:8080" placeholder="http://192.168.1.X:80" onchange="updateEspIp()">
+                <input type="text" id="espIpInput" value="http://10.34.233.78" placeholder="http://192.168.1.X" onchange="updateEspIp()">
             </div>
 
             <div class="status-pill">
@@ -707,11 +707,10 @@
     <script>
         // ESP32 IP Configuration - Dynamic Host for Mobile Access
         const currentHost = window.location.hostname || "localhost";
-        const defaultEsp = (currentHost === "localhost" || currentHost === "127.0.0.1")
-            ? "http://localhost:8080"
-            : `http://${currentHost}:8080`;
+        const defaultEsp = "http://10.34.233.78";
 
-        let ESP_IP = localStorage.getItem("ESP_IP") || defaultEsp;
+        let ESP_IP = defaultEsp;
+        localStorage.setItem("ESP_IP", ESP_IP);
         document.getElementById("espIpInput").value = ESP_IP;
 
         function updateEspIp() {
