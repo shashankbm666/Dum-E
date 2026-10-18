@@ -1165,8 +1165,8 @@
                             <line x1="12" y1="22" x2="12" y2="18"/>
                         </svg>
                     </div>
-                    <div class="no-image-title">No Video Feed Loaded</div>
-                    <div class="no-image-subtitle">Use the primary controls below to capture from workbench camera or select from image library.</div>
+                    <div class="no-image-title">No Image Loaded</div>
+                    <div class="no-image-subtitle">Snap a photo or select from gallery to begin detection.</div>
                 </div>
 
                 <!-- Displayed when image is uploaded (Tappable to set Base Reference) -->
@@ -2027,6 +2027,25 @@
         // Periodic connection checks
         setInterval(checkConnection, 3000);
         checkConnection();
+
+        // Cross-device image sync: auto-refresh when another device uploads
+        let knownImageVersion = 0;
+        async function syncImageFromServer() {
+            try {
+                const res = await fetch('/api/image_version');
+                const data = await res.json();
+                if (data.version > knownImageVersion) {
+                    knownImageVersion = data.version;
+                    // Fetch the latest processed results and render them
+                    const detectRes = await fetch('/api/detect');
+                    const detectData = await detectRes.json();
+                    renderResults(detectData);
+                }
+            } catch (e) {
+                // Server unreachable — ignore silently
+            }
+        }
+        setInterval(syncImageFromServer, 2000);
     </script>
 </body>
 </html>

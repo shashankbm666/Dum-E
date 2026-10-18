@@ -47,6 +47,7 @@ current_raw_image = None
 current_base_pixel = None  # [x, y] in image coordinates
 last_processed_results = None
 last_detected_bins = []
+image_version = 0  # Incremented on every new upload/sample for cross-device sync
 
 def detect_colored_bins(img, base_pixel=None):
     """
@@ -355,7 +356,9 @@ def analyze_and_annotate_image(img, base_pixel=None):
 
 @app.route('/')
 def index():
-    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../index.html"))
+    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../web/index.html"))
+    if not os.path.exists(html_path):
+        html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../index.html"))
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             resp = make_response(f.read())
@@ -405,7 +408,7 @@ def proxy_grip():
 @app.route('/api/upload', methods=['POST'])
 def upload_image():
     """Receives image file, processes it, and caches the raw image for re-detection/taps."""
-    global current_raw_image, last_processed_results
+    global current_raw_image, last_processed_results, image_version
 
     img = None
     if 'image' in request.files:
@@ -428,6 +431,7 @@ def upload_image():
         return jsonify({"status": "error", "error": "No valid image provided"}), 400
 
     current_raw_image = img
+    image_version += 1
     results = analyze_and_annotate_image(img)
     last_processed_results = results
     return jsonify(results)
@@ -435,9 +439,10 @@ def upload_image():
 @app.route('/api/sample', methods=['GET'])
 def get_sample():
     """Generates and processes a sample test image with colored bins and coins."""
-    global current_raw_image, last_processed_results
+    global current_raw_image, last_processed_results, image_version
     sample_img = generate_sample_workbench_image()
     current_raw_image = sample_img
+    image_version += 1
     results = analyze_and_annotate_image(sample_img)
     last_processed_results = results
     return jsonify(results)
@@ -475,6 +480,11 @@ def get_latest_detection():
     if last_processed_results is None:
         return get_sample()
     return jsonify(last_processed_results)
+
+@app.route('/api/image_version', methods=['GET'])
+def get_image_version():
+    """Returns current image version number for cross-device sync polling."""
+    return jsonify({"version": image_version})
 
 # ==========================================
 # Smooth Motion Engine & Trajectory Tracking
