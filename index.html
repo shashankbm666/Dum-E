@@ -550,6 +550,158 @@
             font-weight: 700;
         }
 
+        /* Pick & Place Motion Stepper Panel */
+        .motion-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .motion-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .motion-panel-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .motion-phase-badge {
+            background-color: var(--box-bg-dark);
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .motion-progress-wrap {
+            width: 100%;
+            height: 8px;
+            background-color: var(--box-bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+        }
+
+        .motion-progress-fill {
+            height: 100%;
+            width: 100%;
+            background-color: var(--accent-cyan);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .motion-telemetry-text {
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-height: 16px;
+        }
+
+        .motion-stepper-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .btn-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background-color: var(--box-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 10px 4px;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-step .step-idx {
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-muted);
+        }
+
+        .btn-step:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+            background-color: #1f2937;
+        }
+
+        .btn-step.active-step {
+            border-color: var(--accent-cyan);
+            background-color: rgba(0, 229, 255, 0.15);
+            color: var(--accent-cyan);
+        }
+        .btn-step.active-step .step-idx {
+            color: var(--accent-cyan);
+        }
+
+        .box-select-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .box-select-label {
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .box-pills-wrap {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pill-box-btn {
+            background-color: var(--box-bg-dark);
+            border: 1px solid var(--panel-border);
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .pill-box-btn:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+        .pill-box-btn.selected {
+            background-color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: #000000;
+            font-weight: 800;
+        }
+
         /* Mobile Breakpoint */
         @media (max-width: 860px) {
             body { padding: 10px 12px; }
@@ -559,6 +711,8 @@
             .image-display-frame { height: 260px; }
             .no-image-title { font-size: 26px; }
             .middle-controls-grid { grid-template-columns: 1fr; gap: 12px; }
+            .motion-stepper-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .box-select-row { flex-direction: column; align-items: flex-start; }
             .sliders-grid { grid-template-columns: 1fr; gap: 16px; }
             .bottom-actions-bar { flex-direction: column; gap: 12px; }
             .btn-mag { width: 100%; }
@@ -656,6 +810,57 @@
                         <button class="btn-cancel" onclick="cancelAction()">Cancel</button>
                         <button class="btn-abort" onclick="abortEmergency()">abort</button>
                     </div>
+                </div>
+        </div>
+
+        <!-- 2.5 INTERMEDIATE: PICK & PLACE MOTION STEPPER & STATUS BAR -->
+        <div class="motion-panel">
+            <div class="motion-header-row">
+                <span class="motion-panel-title">🎯 MOTION SEQUENCE & STEPPER CONTROL</span>
+                <span class="motion-phase-badge" id="motionPhaseBadge">IDLE</span>
+            </div>
+
+            <div class="motion-progress-wrap">
+                <div class="motion-progress-fill" id="motionProgressBar" style="width: 100%;"></div>
+            </div>
+
+            <div class="motion-telemetry-text" id="motionDetailMsg">ARM READY IN NEUTRAL POSITION</div>
+
+            <!-- Clickable 6-Step Movement Action Pipeline -->
+            <div class="motion-stepper-grid">
+                <button class="btn-step" id="stepBtn1" onclick="runSingleStep('hover_coin', 1)">
+                    <span class="step-idx">① HOVER</span>
+                    <span>OVER COIN</span>
+                </button>
+                <button class="btn-step" id="stepBtn2" onclick="runSingleStep('pick_coin', 2)">
+                    <span class="step-idx">② PICK</span>
+                    <span>MAGNET ON</span>
+                </button>
+                <button class="btn-step" id="stepBtn3" onclick="runSingleStep('lift_coin', 3)">
+                    <span class="step-idx">③ LIFT</span>
+                    <span>SAFE ASCENT</span>
+                </button>
+                <button class="btn-step" id="stepBtn4" onclick="runTransitStep()">
+                    <span class="step-idx">④ TRANSIT</span>
+                    <span>TO BOX</span>
+                </button>
+                <button class="btn-step" id="stepBtn5" onclick="runDropStep()">
+                    <span class="step-idx">⑤ DROP</span>
+                    <span>MAGNET OFF</span>
+                </button>
+                <button class="btn-step" id="stepBtn6" onclick="runSingleStep('home', 6)">
+                    <span class="step-idx">⑥ HOME</span>
+                    <span>NEUTRAL (90°)</span>
+                </button>
+            </div>
+
+            <!-- Destination Box Selector for Stepper Actions -->
+            <div class="box-select-row">
+                <span class="box-select-label">DESTINATION BOX FOR STEP ④ & ⑤:</span>
+                <div class="box-pills-wrap">
+                    <button class="pill-box-btn selected" id="pillBox1" onclick="selectActiveBox(1)">BOX 1 (GREEN)</button>
+                    <button class="pill-box-btn" id="pillBox2" onclick="selectActiveBox(2)">BOX 2 (RED)</button>
+                    <button class="pill-box-btn" id="pillBox3" onclick="selectActiveBox(3)">BOX 3 (BLUE)</button>
                 </div>
             </div>
         </div>
@@ -882,17 +1087,100 @@
         }
 
         let motionPollInterval = null;
+        let activeTargetBox = 1;
+
+        function selectActiveBox(boxNum) {
+            activeTargetBox = boxNum;
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById('pillBox' + i);
+                if (el) el.className = (i === boxNum) ? 'pill-box-btn selected' : 'pill-box-btn';
+            }
+            const msgEl = document.getElementById('motionDetailMsg');
+            if (msgEl) msgEl.innerText = `DESTINATION SET TO BOX ${boxNum}. READY FOR STEP ④ / ⑤.`;
+        }
+
+        function highlightStep(stepNum) {
+            for (let i = 1; i <= 6; i++) {
+                const el = document.getElementById('stepBtn' + i);
+                if (el) {
+                    if (i === stepNum) el.classList.add('active-step');
+                    else el.classList.remove('active-step');
+                }
+            }
+        }
+
+        async function runSingleStep(stepName, stepIndex) {
+            highlightStep(stepIndex);
+            const msgEl = document.getElementById('motionDetailMsg');
+            const badgeEl = document.getElementById('motionPhaseBadge');
+            const barEl = document.getElementById('motionProgressBar');
+
+            if (msgEl) msgEl.innerText = `EXECUTING STEP ${stepIndex}...`;
+            if (badgeEl) badgeEl.innerText = `STEP ${stepIndex}`;
+            if (barEl) barEl.style.width = `${Math.min(100, Math.round(stepIndex * 16.6))}%`;
+
+            try {
+                const res = await fetch(`/api/step/${stepName}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ box: activeTargetBox, esp_ip: ESP_IP })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    if (data.joints) updateSlidersDisplay(data.joints);
+                    if (data.magnet !== undefined) {
+                        magState = (data.magnet === "on");
+                        updateMagnetBtn();
+                    }
+                    if (msgEl) msgEl.innerText = `STEP ${stepIndex} (${stepName.toUpperCase()}) READY.`;
+                }
+            } catch (e) {
+                console.error(e);
+                if (msgEl) msgEl.innerText = `STEP ${stepIndex} ERROR: ` + e;
+            }
+        }
+
+        async function runTransitStep() {
+            await runSingleStep('transit_box', 4);
+        }
+
+        async function runDropStep() {
+            await runSingleStep('drop_coin', 5);
+        }
+
+        function updateMagnetBtn() {
+            const btn = document.getElementById('magBtn');
+            if (btn) {
+                btn.innerText = magState ? 'ELECTROMAGNET: ON' : 'ELECTROMAGNET: OFF';
+                btn.className = magState ? 'btn-mag active' : 'btn-mag';
+            }
+        }
 
         function startMotionStatusPolling() {
             if (motionPollInterval) clearInterval(motionPollInterval);
             const telemetry = document.getElementById('telemetryStatus');
+            const msgEl = document.getElementById('motionDetailMsg');
+            const badgeEl = document.getElementById('motionPhaseBadge');
+            const barEl = document.getElementById('motionProgressBar');
 
             motionPollInterval = setInterval(async () => {
                 try {
                     const res = await fetch('/api/motion_status');
                     const data = await res.json();
-                    if (data && data.message) {
-                        telemetry.innerText = data.message.toUpperCase();
+                    if (data) {
+                        if (data.message) {
+                            if (telemetry) telemetry.innerText = data.message.toUpperCase();
+                            if (msgEl) msgEl.innerText = data.message.toUpperCase();
+                        }
+                        if (data.phase && badgeEl) {
+                            badgeEl.innerText = data.phase;
+                        }
+                        if (data.progress !== undefined && barEl) {
+                            barEl.style.width = `${data.progress}%`;
+                        }
+                        if (data.current_step !== undefined) {
+                            highlightStep(data.current_step);
+                        }
                         if (!data.active) {
                             clearInterval(motionPollInterval);
                             motionPollInterval = null;
@@ -902,11 +1190,12 @@
                     clearInterval(motionPollInterval);
                     motionPollInterval = null;
                 }
-            }, 250);
+            }, 200);
         }
 
         // Sorting Boxes 1, 2, 3 (Dispatches to real detected bin position with smooth motion)
         async function sortToBox(boxNumber) {
+            selectActiveBox(boxNumber);
             document.getElementById('telemetryStatus').innerText = `INITIATING SMOOTH ROUTING TO BOX ${boxNumber}...`;
             try {
                 const res = await fetch('/api/sort_to_box', {

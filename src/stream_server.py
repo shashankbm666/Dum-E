@@ -483,20 +483,40 @@ def get_latest_detection():
 current_motion_status = {
     "active": False,
     "phase": "IDLE",
+    "current_step": 0,
     "message": "Arm is ready in neutral position.",
     "progress": 100,
     "last_updated": time.time()
 }
 
+def map_to_physical_joints(joints):
+    """
+    Translates logical IK coordinates to physical ESP32 servo commands:
+      - Joint 0 (Base): Direct [0, 180]
+      - Joint 1 (Shoulder): Inverted [180 - angle] to match physical mounting (0° = Back, 180° = Reach Forward)
+      - Joint 2 (Elbow): Direct [0, 180] (0° = Back, 180° = Reach Forward / Down)
+    """
+    mapped = {}
+    if "base" in joints:
+        mapped["base"] = max(0, min(180, int(joints["base"])))
+    if "shoulder" in joints:
+        # Invert shoulder angle to match physical servo mount
+        mapped["shoulder"] = max(0, min(180, 180 - int(joints["shoulder"])))
+    if "elbow" in joints:
+        mapped["elbow"] = max(0, min(180, int(joints["elbow"])))
+    return mapped
+
 def send_smooth_move(esp_ip, joints, elbow_delay=45, transit_delay=20):
     """
     Commands ESP32 to execute a smooth, coordinated move for 3 joints (Base, Shoulder, Elbow).
+    Applies hardware calibration mapping (inverting Shoulder).
     Uses /move endpoint with speed control, falling back to /joint.
     """
+    phys = map_to_physical_joints(joints)
     payload = {
-        "base": int(joints["base"]),
-        "shoulder": int(joints["shoulder"]),
-        "elbow": int(joints["elbow"]),
+        "base": phys.get("base", 90),
+        "shoulder": phys.get("shoulder", 90),
+        "elbow": phys.get("elbow", 90),
         "elbowDelay": int(elbow_delay),
         "transitDelay": int(transit_delay)
     }
@@ -510,12 +530,33 @@ def send_smooth_move(esp_ip, joints, elbow_delay=45, transit_delay=20):
     # Fallback to individual /joint calls (0=Base, 1=Shoulder, 2=Elbow)
     j_map = {"base": 0, "shoulder": 1, "elbow": 2}
     for name, idx in j_map.items():
-        if name in joints:
+        if name in phys:
             try:
-                requests.post(f"{esp_ip}/joint", json={"joint": idx, "angle": int(joints[name])}, timeout=0.5)
+                requests.post(f"{esp_ip}/joint", json={"joint": idx, "angle": phys[name]}, timeout=0.5)
             except Exception:
                 pass
     return True
+
+def get_primary_coin_joints():
+    global last_processed_results
+    if last_processed_results and last_processed_results.get("targets"):
+        for t in last_processed_results["targets"]:
+            if t.get("ik") and t["ik"].get("joints"):
+                return t["ik"]["joints"]
+    # Sensible default reach position near table front
+    return {"base": 90, "shoulder": 45, "elbow": 90}
+
+def get_box_joints(box_num):
+    global last_detected_bins
+    for b in last_detected_bins:
+        if b.get("id") == box_num and b.get("ik"):
+            return b["ik"]["joints"]
+    fallback_map = {
+        1: {"base": 35, "shoulder": 40, "elbow": 90},
+        2: {"base": 90, "shoulder": 35, "elbow": 90},
+        3: {"base": 145, "shoulder": 40, "elbow": 90}
+    }
+    return fallback_map.get(box_num, fallback_map[1])
 
 def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_num, coin_id=1):
     """
@@ -531,12 +572,13 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
       9. Lift elbow and smoothly return to neutral home position.
     """
     global current_motion_status
-    current_motion_status.update({"active": True, "progress": 5, "last_updated": time.time()})
+    current_motion_status.update({"active": True, "current_step": 1, "progress": 5, "last_updated": time.time()})
 
     try:
         # Step 1: Raise to Safe Transit Elevation (Elbow ~65° to avoid dragging)
         current_motion_status.update({
             "phase": "TRANSIT_HOVER",
+            "current_step": 1,
             "message": f"Hovering above Coin #{coin_id} at safe elevation...",
             "progress": 15,
             "last_updated": time.time()
@@ -552,6 +594,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 2: Slow Steady Elbow Descent to Pick Coin
         current_motion_status.update({
             "phase": "SLOW_DESCENT_PICK",
+            "current_step": 2,
             "message": f"Lowering elbow slowly towards Coin #{coin_id}...",
             "progress": 35,
             "last_updated": time.time()
@@ -568,6 +611,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 3: Energize Electromagnet
         current_motion_status.update({
             "phase": "LATCHING_MAGNET",
+            "current_step": 2,
             "message": f"Electromagnet ON. Latched to Coin #{coin_id}.",
             "progress": 45,
             "last_updated": time.time()
@@ -578,6 +622,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 4: Slow Steady Lift with Coin
         current_motion_status.update({
             "phase": "SLOW_ASCENT",
+            "current_step": 3,
             "message": f"Lifting Coin #{coin_id} smoothly from table...",
             "progress": 55,
             "last_updated": time.time()
@@ -588,6 +633,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 5: Smooth and Steady Transit Across to Bin
         current_motion_status.update({
             "phase": "STEADY_TRANSIT",
+            "current_step": 4,
             "message": f"Smooth steady transit across to Box {box_num}...",
             "progress": 70,
             "last_updated": time.time()
@@ -603,6 +649,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 6: Slow Steady Elbow Descent into Bin
         current_motion_status.update({
             "phase": "SLOW_DESCENT_DROP",
+            "current_step": 5,
             "message": f"Lowering elbow slowly over Box {box_num}...",
             "progress": 85,
             "last_updated": time.time()
@@ -618,6 +665,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 7: Release Coin into Bin
         current_motion_status.update({
             "phase": "RELEASING_COIN",
+            "current_step": 5,
             "message": f"Releasing coin into Box {box_num}...",
             "progress": 92,
             "last_updated": time.time()
@@ -628,6 +676,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         # Step 8: Smooth Home Return
         current_motion_status.update({
             "phase": "HOME_RETURN",
+            "current_step": 6,
             "message": "Returning smoothly to neutral home position...",
             "progress": 98,
             "last_updated": time.time()
@@ -639,6 +688,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         current_motion_status.update({
             "active": False,
             "phase": "COMPLETED",
+            "current_step": 6,
             "message": f"Coin #{coin_id} delivered successfully to Box {box_num}!",
             "progress": 100,
             "last_updated": time.time()
@@ -647,10 +697,179 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         current_motion_status.update({
             "active": False,
             "phase": "ERROR",
+            "current_step": 0,
             "message": f"Motion error: {str(e)}",
             "progress": 0,
             "last_updated": time.time()
         })
+
+# ==========================================
+# Step-by-Step Individual Action Routes
+# ==========================================
+
+@app.route('/api/step/hover_coin', methods=['POST'])
+def step_hover_coin():
+    data = request.get_json(silent=True) or {}
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    coin_joints = get_primary_coin_joints()
+    hover_pose = {
+        "base": coin_joints["base"],
+        "shoulder": max(30, coin_joints["shoulder"] - 15),
+        "elbow": 65
+    }
+    current_motion_status.update({
+        "active": True,
+        "phase": "TRANSIT_HOVER",
+        "current_step": 1,
+        "message": "Hovering above coin at safe elevation...",
+        "progress": 15,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, hover_pose, elbow_delay=25, transit_delay=20)
+    current_motion_status.update({"active": False, "message": "Hovering above coin (Step 1 Complete)."})
+    return jsonify({"status": "success", "step": 1, "phase": "HOVER_COIN", "joints": hover_pose})
+
+@app.route('/api/step/pick_coin', methods=['POST'])
+def step_pick_coin():
+    data = request.get_json(silent=True) or {}
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    coin_joints = get_primary_coin_joints()
+    pick_pose = {
+        "base": coin_joints["base"],
+        "shoulder": coin_joints["shoulder"],
+        "elbow": coin_joints["elbow"]
+    }
+    current_motion_status.update({
+        "active": True,
+        "phase": "SLOW_DESCENT_PICK",
+        "current_step": 2,
+        "message": "Lowering slowly onto coin...",
+        "progress": 35,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, pick_pose, elbow_delay=45, transit_delay=20)
+    time.sleep(0.4)
+    try:
+        requests.post(f"{target_esp}/grip", json={"state": "close"}, timeout=0.5)
+    except Exception:
+        pass
+    current_motion_status.update({
+        "active": False,
+        "phase": "LATCHING_MAGNET",
+        "current_step": 2,
+        "message": "Electromagnet ON. Coin latched! (Step 2 Complete)",
+        "progress": 45,
+        "last_updated": time.time()
+    })
+    return jsonify({"status": "success", "step": 2, "phase": "PICK_COIN", "joints": pick_pose, "magnet": "on"})
+
+@app.route('/api/step/lift_coin', methods=['POST'])
+def step_lift_coin():
+    data = request.get_json(silent=True) or {}
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    coin_joints = get_primary_coin_joints()
+    lift_pose = {
+        "base": coin_joints["base"],
+        "shoulder": max(30, coin_joints["shoulder"] - 15),
+        "elbow": 65
+    }
+    current_motion_status.update({
+        "active": True,
+        "phase": "SLOW_ASCENT",
+        "current_step": 3,
+        "message": "Lifting coin smoothly from table...",
+        "progress": 55,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, lift_pose, elbow_delay=30, transit_delay=20)
+    current_motion_status.update({"active": False, "message": "Coin lifted to transit altitude (Step 3 Complete)."})
+    return jsonify({"status": "success", "step": 3, "phase": "LIFT_COIN", "joints": lift_pose})
+
+@app.route('/api/step/transit_box', methods=['POST'])
+def step_transit_box():
+    data = request.get_json(silent=True) or {}
+    box_num = int(data.get("box", 1))
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    bin_joints = get_box_joints(box_num)
+    hover_bin = {
+        "base": bin_joints["base"],
+        "shoulder": max(30, bin_joints["shoulder"] - 15),
+        "elbow": 65
+    }
+    current_motion_status.update({
+        "active": True,
+        "phase": "STEADY_TRANSIT",
+        "current_step": 4,
+        "message": f"Smooth transit across to Box {box_num}...",
+        "progress": 75,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, hover_bin, elbow_delay=25, transit_delay=22)
+    current_motion_status.update({"active": False, "message": f"Hovering over Box {box_num} (Step 4 Complete)."})
+    return jsonify({"status": "success", "step": 4, "phase": "TRANSIT_BOX", "box": box_num, "joints": hover_bin})
+
+@app.route('/api/step/drop_coin', methods=['POST'])
+def step_drop_coin():
+    data = request.get_json(silent=True) or {}
+    box_num = int(data.get("box", 1))
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    bin_joints = get_box_joints(box_num)
+    drop_pose = {
+        "base": bin_joints["base"],
+        "shoulder": bin_joints["shoulder"],
+        "elbow": bin_joints["elbow"]
+    }
+    current_motion_status.update({
+        "active": True,
+        "phase": "SLOW_DESCENT_DROP",
+        "current_step": 5,
+        "message": f"Lowering slowly into Box {box_num}...",
+        "progress": 85,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, drop_pose, elbow_delay=45, transit_delay=20)
+    time.sleep(0.4)
+    try:
+        requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
+    except Exception:
+        pass
+    lift_bin = {
+        "base": bin_joints["base"],
+        "shoulder": max(30, bin_joints["shoulder"] - 15),
+        "elbow": 65
+    }
+    send_smooth_move(target_esp, lift_bin, elbow_delay=25, transit_delay=20)
+    current_motion_status.update({
+        "active": False,
+        "phase": "RELEASING_COIN",
+        "current_step": 5,
+        "message": f"Coin dropped in Box {box_num}! (Step 5 Complete)",
+        "progress": 92
+    })
+    return jsonify({"status": "success", "step": 5, "phase": "DROP_COIN", "box": box_num, "magnet": "off"})
+
+@app.route('/api/step/home', methods=['POST'])
+def step_home():
+    data = request.get_json(silent=True) or {}
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    home_pose = {"base": 90, "shoulder": 90, "elbow": 90}
+    current_motion_status.update({
+        "active": True,
+        "phase": "HOME_RETURN",
+        "current_step": 6,
+        "message": "Returning to neutral 90° home position...",
+        "progress": 98,
+        "last_updated": time.time()
+    })
+    send_smooth_move(target_esp, home_pose, elbow_delay=25, transit_delay=20)
+    current_motion_status.update({
+        "active": False,
+        "phase": "COMPLETED",
+        "current_step": 6,
+        "message": "Arm centered at 90° neutral (Step 6 Complete).",
+        "progress": 100
+    })
+    return jsonify({"status": "success", "step": 6, "phase": "HOME", "joints": home_pose})
 
 @app.route('/api/sort_to_box', methods=['POST'])
 def sort_to_box():
