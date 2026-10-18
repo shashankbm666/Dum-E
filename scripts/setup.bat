@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+cd /d "%~dp0.."
 title Dum-E Robotic Arm Setup
 
 echo ================================================================
@@ -47,7 +48,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo ================================================================
 echo    SETUP COMPLETE! Everything is ready to run.
-echo    To launch the Command Center, double-click: run.bat
+echo    To launch the Command Center, double-click: scripts\run.bat
 echo ================================================================
 echo.
 pause

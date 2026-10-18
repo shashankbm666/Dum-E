@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+cd "$(dirname "$0")/.."
 
 echo "================================================================"
 echo "   Dum-E 4-DOF Robotic Arm - Linux/macOS Setup Script"
@@ -23,5 +24,5 @@ pip install --upgrade pip --quiet
 pip install -r requirements.txt
 
 echo "================================================================"
-echo "   SETUP COMPLETE! To start the server, run: ./run.sh"
+echo "   SETUP COMPLETE! To start the server, run: ./scripts/run.sh"
 echo "================================================================"

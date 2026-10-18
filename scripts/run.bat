@@ -1,9 +1,10 @@
 @echo off
 setlocal
+cd /d "%~dp0.."
 title Dum-E Robotic Arm Command Center
 
 if not exist ".venv\Scripts\activate.bat" (
-    echo [ERROR] Virtual environment not found. Please run setup.bat first!
+    echo [ERROR] Virtual environment not found. Please run scripts\setup.bat first!
     pause
     exit /b 1
 )

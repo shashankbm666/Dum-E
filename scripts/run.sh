@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+cd "$(dirname "$0")/.."
 if [ ! -f ".venv/bin/activate" ]; then
-    echo "[ERROR] Virtual environment not found. Please run ./setup.sh first!"
+    echo "[ERROR] Virtual environment not found. Please run ./scripts/setup.sh first!"
     exit 1
 fi
 
