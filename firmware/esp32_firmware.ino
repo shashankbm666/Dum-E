@@ -20,7 +20,7 @@
 // Network Configuration
 // REPLACE WITH YOUR WIFI CREDENTIALS
 // ==========================================
-const char* ssid     = "Samung";
+const char* ssid     = "Samsung";
 const char* password = "12345678";
 
 // ==========================================
