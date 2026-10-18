@@ -979,14 +979,22 @@
             }
         }
 
+        const _lastSent = [0, 0, 0];  // timestamps per joint for throttle
         function onSliderMove(jointIndex, val) {
             const labels = ['baseVal', 'shoulderVal', 'elbowVal'];
             if (labels[jointIndex]) {
                 document.getElementById(labels[jointIndex]).innerText = val + '°';
             }
+            // Throttle: send at most every 50ms per joint for real-time control
+            const now = Date.now();
+            if (now - _lastSent[jointIndex] >= 50) {
+                _lastSent[jointIndex] = now;
+                postData('/joint', { joint: parseInt(jointIndex), angle: parseInt(val) });
+            }
         }
 
         function sendJoint(jointIndex, angleValue) {
+            // Final send on mouse-up to guarantee the last value arrives
             postData('/joint', { joint: parseInt(jointIndex), angle: parseInt(angleValue) });
         }
 
