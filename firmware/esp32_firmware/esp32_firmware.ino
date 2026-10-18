@@ -105,7 +105,7 @@ void setup() {
 
     elbowServo.setPeriodHertz(50);
     elbowServo.attach(ELBOW_PIN, 500, 2400);
-    elbowServo.write(elbowAngle);
+    elbowServo.write(180 - elbowAngle); // Inverted: 0 deg = back, 180 deg = front
 
     Serial.println("[SYSTEM] 3 Servos centered at 90 degrees (Base:13, Shoulder:14, Elbow:27, Magnet:26).");
 
@@ -217,7 +217,7 @@ void setup() {
                 case 2:
                     targetElbow = angle;
                     currentElbow = angle;
-                    elbowServo.write(angle);
+                    elbowServo.write(180 - angle); // Inverted: 0 deg = back, 180 deg = front
                     break;
                 default:
                     AsyncWebServerResponse* res = req->beginResponse(400, "application/json", "{\"error\":\"Unknown joint index (0=Base, 1=Shoulder, 2=Elbow)\"}");
@@ -357,7 +357,7 @@ void loop() {
             lastElbowTick = now;
             if (currentElbow < targetElbow) currentElbow++;
             else currentElbow--;
-            elbowServo.write(currentElbow);
+            elbowServo.write(180 - currentElbow); // Inverted: 0 deg = back, 180 deg = front
             elbowAngle = currentElbow;
         }
     }
