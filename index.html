@@ -3,27 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dum-E</title>
+    <title>Dum-E • Aerospace Robotic Control Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ============================
-           Dum-E Interface Palette
-           ============================ */
+        /* ============================================================
+           DUM-E MISSION CONTROL DESIGN SYSTEM (AEROSPACE / SPACEX HMI)
+           Flat, matte, dark mode, high legibility, reduced cognitive load.
+           ============================================================ */
         :root {
-            --bg-main: #0b0f19;
-            --panel-bg: #111827;
-            --panel-border: #374151;
-            --panel-border-focus: #00f0ff;
-            --accent-cyan: #00f0ff;
-            --accent-cyan-hover: #00c4d4;
-            --accent-red: #ef4444;
-            --accent-red-hover: #dc2626;
+            --bg-main: #0c0d12;
+            --surface-card: #15171e;
+            --surface-elevated: #1d202a;
+            --surface-control: #232733;
+            --surface-inset: #0e0f14;
+
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-medium: rgba(255, 255, 255, 0.14);
+            --border-focus: #00e5ff;
+
+            --accent-cyan: #00e5ff;
+            --accent-cyan-hover: #33ebff;
+            --accent-cyan-dim: rgba(0, 229, 255, 0.12);
+
+            --accent-red: #ff3b30;
+            --accent-red-hover: #e0281d;
+            --accent-red-dim: rgba(255, 59, 48, 0.16);
+
             --accent-green: #10b981;
-            --accent-yellow: #f59e0b;
-            --text-primary: #ffffff;
+            --accent-green-dim: rgba(16, 185, 129, 0.15);
+
+            --accent-amber: #f59e0b;
+            --accent-amber-dim: rgba(245, 158, 11, 0.15);
+
+            --text-primary: #f3f4f6;
             --text-secondary: #9ca3af;
             --text-muted: #6b7280;
-            --box-bg: #1f2937;
-            --box-bg-dark: #0f172a;
+            --text-accent: #00e5ff;
+
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'Roboto Mono', 'SF Mono', Consolas, monospace;
         }
 
         * {
@@ -35,106 +55,205 @@
         body {
             background-color: var(--bg-main);
             color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: var(--font-ui);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 16px 24px;
+            padding: 20px 24px 48px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Top Header */
-        header {
+        /* Top Mission Header */
+        .deck-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 14px;
-            margin-bottom: 16px;
-            border-bottom: 2px solid var(--panel-border);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .header-title-wrap {
+        .header-brand {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        h1 {
-            font-size: 20px;
-            font-weight: 700;
+        .brand-badge {
+            background-color: var(--surface-control);
             color: var(--accent-cyan);
-            letter-spacing: -0.01em;
-            text-transform: uppercase;
-        }
-
-        .header-status-bar {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .esp-input-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background-color: var(--box-bg-dark);
-            border: 1px solid var(--panel-border);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .esp-input-box label {
+            font-family: var(--font-mono);
             font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 600;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.08em;
         }
 
-        .esp-input-box input {
+        .brand-title-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.04em;
+        }
+
+        .header-telemetry-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .esp-ip-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .telemetry-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .telemetry-ip-input {
             background-color: transparent;
             border: none;
             color: var(--accent-cyan);
-            font-family: monospace;
+            font-family: var(--font-mono);
             font-size: 12px;
-            width: 160px;
+            font-weight: 600;
+            width: 155px;
             outline: none;
         }
 
-        .status-pill {
+        .status-indicator-pill {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 700;
+            gap: 7px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            padding: 7px 12px;
+            border-radius: 6px;
         }
 
-        .status-dot {
+        .status-pulse-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background-color: var(--text-muted);
+            transition: background-color 0.2s ease;
         }
-        .status-dot.online { background-color: var(--accent-green); }
-        .status-dot.offline { background-color: var(--accent-red); }
+        .status-pulse-dot.online {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+        .status-pulse-dot.offline {
+            background-color: var(--accent-red);
+        }
 
-        /* Main Structured Layout matching user diagram */
+        .status-badge-text {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+        }
+
+        /* Hazard Abort Banner */
+        .hazard-alert-banner {
+            background-color: var(--accent-red);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .hazard-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hazard-icon {
+            font-size: 20px;
+        }
+
+        .hazard-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hazard-text strong {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .hazard-text span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hazard-dismiss-btn {
+            background-color: rgba(0, 0, 0, 0.25);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .hazard-dismiss-btn:hover {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Main Container */
         .app-container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1140px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
 
-        /* 1. TOP: Centered Big Image Window */
+        /* 1. TOP: 16:9 Vision & Camera Viewport */
         .image-window-card {
-            background-color: var(--panel-bg);
-            border: 2px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 16px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             width: 100%;
             position: relative;
         }
@@ -142,9 +261,9 @@
         .image-display-frame {
             width: 100%;
             height: 440px;
-            background-color: #000000;
-            border: 2px solid var(--panel-border);
-            border-radius: 6px;
+            background-color: var(--surface-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -160,81 +279,263 @@
             cursor: crosshair;
         }
 
-        /* No Image Placeholder */
+        /* Placeholder when no image loaded */
         .no-image-placeholder {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 30px;
-            cursor: pointer;
+            padding: 24px;
+        }
+
+        .placeholder-reticle {
+            width: 60px;
+            height: 60px;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            color: var(--text-muted);
+            font-size: 22px;
         }
 
         .no-image-title {
-            font-size: 42px;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
         }
 
         .no-image-subtitle {
-            font-size: 14px;
-            color: var(--accent-cyan);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+            max-width: 380px;
+            line-height: 1.4;
+        }
+
+        .placeholder-actions-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
         }
 
         .tap-hint-bar {
             width: 100%;
-            background-color: var(--box-bg-dark);
-            border: 1px solid var(--panel-border);
+            background-color: var(--surface-elevated);
             color: var(--accent-cyan);
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             text-align: center;
-            padding: 6px;
-            margin-top: 8px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            padding: 8px 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            letter-spacing: 0.02em;
         }
 
-        /* 2. MIDDLE ROW: 3 Unified Control Boxes */
+        .detection-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding: 0 4px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+
+        .detection-status-text {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .detection-coins-tag {
+            color: var(--accent-amber);
+            font-weight: 700;
+            background-color: var(--surface-control);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        /* 2. MIDDLE ROW: 3 Control Surfaces */
         .middle-controls-grid {
             display: grid;
             grid-template-columns: 1fr 1.25fr 1fr;
-            gap: 14px;
+            gap: 16px;
             width: 100%;
         }
 
-        .control-box {
-            background-color: var(--panel-bg);
-            border: 2px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 14px 16px;
+        .control-surface {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            gap: 12px;
         }
 
-        .control-box-header {
-            font-size: 11px;
-            font-weight: 800;
+        .surface-tag {
+            font-size: 10px;
+            font-weight: 700;
             color: var(--text-muted);
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            font-family: monospace;
+            font-family: var(--font-mono);
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        /* Box 1: Upload Control */
-        .upload-box-inner {
+        /* Surface 1: Camera & Image Capture */
+        .upload-surface-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .btn-row-dual {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* Buttons */
+        .btn-primary-cyan {
+            background-color: var(--accent-cyan);
+            color: #000000;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.15s ease, transform 0.05s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary-cyan:hover {
+            background-color: var(--accent-cyan-hover);
+        }
+        .btn-primary-cyan:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary-surface {
+            background-color: var(--surface-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-secondary-surface:hover {
+            background-color: var(--surface-control);
+            border-color: var(--border-medium);
+        }
+        .btn-secondary-surface:active {
+            transform: scale(0.98);
+        }
+
+        .btn-tertiary-ghost {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 7px 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+        .btn-tertiary-ghost:hover {
+            color: var(--text-primary);
+            background-color: var(--surface-elevated);
+            border-color: var(--border-medium);
+        }
+
+        /* Surface 2: Detection & Base Calibration */
+        .calibration-surface-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .calib-sub-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .calib-divider {
+            height: 1px;
+            background-color: var(--border-subtle);
+            margin: 2px 0;
+        }
+
+        .detect-status-line {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .base-coord-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .base-coord-input {
+            flex: 1;
+            background-color: var(--surface-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        .base-coord-input:focus {
+            border-color: var(--border-focus);
+        }
+
+        .base-status-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* Surface 3: Direct Routing & Actions */
+        .routing-surface-body {
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -242,85 +543,463 @@
             justify-content: center;
         }
 
-        .upload-dual-row {
+        .route-buttons-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            width: 100%;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
         }
 
-        .btn-cam-action {
-            background-color: var(--accent-cyan);
-            color: #000000;
-            border: 2px solid var(--accent-cyan);
+        .btn-route {
+            background-color: var(--surface-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
             border-radius: 6px;
-            padding: 12px 6px;
-            font-size: 13px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            padding: 9px 4px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
             text-align: center;
-            transition: background-color 0.15s;
+            transition: all 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 4px;
         }
-        .btn-cam-action:hover {
-            background-color: var(--accent-cyan-hover);
-            border-color: var(--accent-cyan-hover);
-        }
-
-        .btn-gal-action {
-            background-color: var(--box-bg);
+        .btn-route:hover {
+            border-color: var(--accent-cyan);
             color: var(--accent-cyan);
-            border: 2px solid var(--accent-cyan);
+            background-color: var(--surface-control);
+        }
+
+        .route-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .route-sub-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .btn-cancel-action {
+            background-color: var(--surface-control);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
             border-radius: 6px;
-            padding: 12px 6px;
-            font-size: 13px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
             text-align: center;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
+        }
+        .btn-cancel-action:hover {
+            color: var(--text-primary);
+            background-color: #2c3240;
+        }
+
+        /* 3. MOTION SEQUENCE LINEAR PROGRESSION TRACK (SUBWAY MAP) */
+        .motion-panel {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .motion-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .motion-panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+
+        .motion-phase-badge {
+            background-color: var(--surface-control);
+            color: var(--accent-cyan);
+            border: 1px solid var(--border-subtle);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.06em;
+        }
+
+        .motion-progress-wrap {
+            width: 100%;
+            height: 4px;
+            background-color: var(--surface-inset);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .motion-progress-fill {
+            height: 100%;
+            width: 100%;
+            background-color: var(--accent-cyan);
+            transition: width 0.3s ease;
+        }
+
+        .motion-telemetry-text {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            min-height: 16px;
+        }
+
+        /* The Linear Subway Map Track */
+        .sequence-track-wrap {
+            position: relative;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .sequence-track-line-bg {
+            position: absolute;
+            top: 26px;
+            left: 5%;
+            width: 90%;
+            height: 3px;
+            background-color: var(--surface-control);
+            z-index: 1;
+            border-radius: 2px;
+        }
+
+        .sequence-track-line-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent-cyan);
+            transition: width 0.4s ease;
+            border-radius: 2px;
+        }
+
+        .sequence-nodes-grid {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .sequence-node {
+            background-color: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px;
+            transition: transform 0.1s ease;
+        }
+        .sequence-node:hover {
+            transform: translateY(-2px);
+        }
+
+        .node-indicator {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background-color: var(--surface-elevated);
+            border: 2px solid var(--border-medium);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: all 0.25s ease;
         }
-        .btn-gal-action:hover {
-            background-color: rgba(0, 229, 255, 0.15);
+
+        .node-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 2px;
+        }
+
+        .node-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .node-subtitle {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Active Node State */
+        .sequence-node.active-step .node-indicator {
+            background-color: var(--accent-cyan);
+            border-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+        }
+        .sequence-node.active-step .node-title {
+            color: var(--accent-cyan);
+            font-weight: 800;
+        }
+
+        /* Completed Node State */
+        .sequence-node.completed-step .node-indicator {
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
+            color: #ffffff;
+        }
+        .sequence-node.completed-step .node-title {
             color: #ffffff;
         }
 
-        .placeholder-actions-row {
+        .box-select-row {
             display: flex;
-            gap: 12px;
-            margin-top: 14px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
         }
 
-        .btn-ph-cam, .btn-ph-gal {
-            background-color: var(--box-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
+        .box-select-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
-        .btn-ph-cam:hover {
+
+        .box-pills-wrap {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pill-box-btn {
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .pill-box-btn:hover {
+            border-color: var(--border-medium);
+            color: var(--text-primary);
+        }
+        .pill-box-btn.selected {
+            background-color: var(--accent-cyan-dim);
             border-color: var(--accent-cyan);
             color: var(--accent-cyan);
-            background-color: #1f2937;
+            font-weight: 700;
         }
-        .btn-ph-gal:hover {
-            border-color: var(--accent-yellow);
-            color: var(--accent-yellow);
-            background-color: #1f2937;
+
+        .pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        /* 4. ACTUATOR TELEMETRY & TACTILE SLIDERS */
+        .sliders-panel {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .sliders-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .sliders-title-text {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: var(--surface-inset);
+            border: 1px solid var(--border-subtle);
+            padding: 14px 16px;
+            border-radius: 8px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .slider-title {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .slider-val {
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Thick Tactile Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background-color: var(--surface-control);
+            outline: none;
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            margin: 8px 0;
+        }
+
+        /* WebKit Thumb */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--accent-cyan);
+            border: 3px solid #14161e;
+            box-shadow: 0 0 0 1px var(--accent-cyan);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover,
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+
+        /* Firefox Thumb */
+        input[type=range]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--accent-cyan);
+            border: 3px solid #14161e;
+            box-shadow: 0 0 0 1px var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        .bottom-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .btn-mag {
+            background-color: var(--surface-control);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-medium);
+            padding: 11px 22px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+        .btn-mag:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-cyan);
+        }
+        .btn-mag.active {
+            background-color: var(--accent-cyan);
+            color: #000000;
+            border-color: var(--accent-cyan);
+        }
+
+        .hardware-ready-badge {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            letter-spacing: 0.05em;
+        }
+
+        /* 5. SAFETY INTERLOCK: MASSIVE HIGH-VISIBILITY EMERGENCY ABORT */
+        .safety-interlock-bar {
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .btn-emergency-abort {
+            width: 100%;
+            background-color: var(--accent-red);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 16px 24px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.15s ease, transform 0.05s ease;
+            box-shadow: 0 4px 14px rgba(255, 59, 48, 0.25);
+        }
+        .btn-emergency-abort:hover {
+            background-color: var(--accent-red-hover);
+        }
+        .btn-emergency-abort:active {
+            transform: scale(0.99);
         }
 
         /* Camera Live Modal */
@@ -339,25 +1018,25 @@
         }
 
         .camera-modal-content {
-            background-color: var(--card-bg);
-            border: 2px solid var(--accent-cyan);
-            border-radius: 8px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-medium);
+            border-radius: 10px;
             width: 100%;
             max-width: 600px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            padding: 16px;
+            gap: 14px;
+            padding: 18px;
         }
 
         .camera-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-family: monospace;
-            font-weight: 800;
-            font-size: 14px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 13px;
             color: var(--accent-cyan);
         }
 
@@ -391,581 +1070,112 @@
 
         .camera-modal-actions {
             display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .btn-snap-modal {
-            flex: 2;
-            background-color: var(--accent-cyan);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            padding: 12px;
-            font-weight: 800;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        .btn-snap-modal:hover {
-            background-color: var(--accent-cyan-hover);
-        }
-
-        .btn-cancel-modal {
-            flex: 1;
-            background-color: var(--box-bg);
-            color: var(--text-secondary);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 12px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-        }
-
-        .btn-sample-demo {
-            background-color: var(--box-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-        }
-        .btn-sample-demo:hover {
-            background-color: #374151;
-            color: #ffffff;
-        }
-
-        /* Box 2: Unified Detection & Base Calibration */
-        .combined-calib-inner {
-            display: flex;
-            flex-direction: column;
             gap: 10px;
-            height: 100%;
-            justify-content: center;
-        }
-
-        .calib-row-detect {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .calib-divider {
-            height: 1px;
-            background-color: var(--panel-border);
-            margin: 2px 0;
-        }
-
-        .calib-row-base {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .btn-detect-bins {
-            background-color: var(--box-bg);
-            color: var(--accent-yellow);
-            border: 2px solid var(--accent-yellow);
-            border-radius: 6px;
-            padding: 9px 12px;
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-        }
-        .btn-detect-bins:hover {
-            background-color: var(--accent-yellow);
-            color: #000000;
-        }
-
-        .detect-bin-status {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-align: center;
-            font-family: monospace;
-        }
-
-        .base-input-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .base-coord-input {
-            flex: 1;
-            background-color: var(--box-bg-dark);
-            border: 2px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 7px 8px;
-            color: var(--accent-cyan);
-            font-family: monospace;
-            font-size: 12px;
-            font-weight: 700;
-            outline: none;
-            text-align: center;
-        }
-        .base-coord-input:focus {
-            border-color: var(--accent-cyan);
-        }
-
-        .btn-set-base {
-            background-color: var(--box-bg);
-            color: var(--accent-cyan);
-            border: 2px solid var(--accent-cyan);
-            border-radius: 6px;
-            padding: 7px 12px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .btn-set-base:hover {
-            background-color: var(--accent-cyan);
-            color: #000000;
-        }
-
-        .base-status-text {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-align: center;
-            font-family: monospace;
-        }
-
-        /* Box 4: Action Buttons (TO box 1, 2, 3, Cancel, abort) */
-        .actions-box-inner {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            height: 100%;
-            justify-content: center;
-        }
-
-        .box-row-top {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
-        }
-
-        .box-row-bottom {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 6px;
-        }
-
-        .btn-box-action {
-            background-color: var(--box-bg);
-            color: var(--text-primary);
-            border: 2px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 10px 4px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            text-align: center;
-            text-transform: uppercase;
-        }
-        .btn-box-action:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            background-color: #1e293b;
-        }
-
-        .btn-cancel {
-            background-color: #374151;
-            color: var(--text-primary);
-            border: 2px solid #4b5563;
-            border-radius: 6px;
-            padding: 9px 10px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        .btn-cancel:hover {
-            background-color: #4b5563;
-        }
-
-        .btn-abort {
-            background-color: var(--accent-red);
-            color: #ffffff;
-            border: 2px solid var(--accent-red);
-            border-radius: 6px;
-            padding: 9px 12px;
-            font-size: 12px;
-            font-weight: 900;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .btn-abort:hover {
-            background-color: var(--accent-red-hover);
-            border-color: var(--accent-red-hover);
-        }
-
-        /* 3. BOTTOM: all SLIDER CONTROLS Full-Width Container */
-        .sliders-panel {
-            background-color: var(--panel-bg);
-            border: 2px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 20px;
             width: 100%;
-        }
-
-        .sliders-title {
-            font-size: 18px;
-            font-weight: 900;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent-cyan);
-            margin-bottom: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--panel-border);
-            padding-bottom: 8px;
-        }
-
-        .sliders-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
-        .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .slider-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .slider-title {
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-
-        .slider-val {
-            color: var(--accent-cyan);
-            font-family: monospace;
-            font-size: 15px;
-            font-weight: 700;
-        }
-
-        input[type=range] {
-            width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background-color: var(--box-bg-dark);
-            border: 1px solid var(--panel-border);
-            accent-color: var(--accent-cyan);
-            cursor: pointer;
-        }
-
-        .bottom-actions-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid var(--panel-border);
-        }
-
-        .btn-mag {
-            background-color: transparent;
-            color: var(--accent-cyan);
-            border: 2px solid var(--accent-cyan);
-            padding: 12px 28px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-        .btn-mag:hover {
-            background-color: #00373d;
-        }
-        .btn-mag.active {
-            background-color: var(--accent-cyan);
-            color: #000000;
-        }
-
-        .btn-neutral {
-            background-color: var(--box-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--panel-border);
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-        .btn-neutral:hover {
-            background-color: #374151;
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-
-        .detection-bar {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            font-size: 12px;
-            font-family: monospace;
-            color: var(--text-secondary);
-        }
-
-        .detection-coins-tag {
-            color: var(--accent-yellow);
-            font-weight: 700;
-        }
-
-        /* Pick & Place Motion Stepper Panel */
-        .motion-panel {
-            background-color: var(--card-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .motion-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .motion-panel-title {
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--accent-cyan);
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .motion-phase-badge {
-            background-color: var(--box-bg-dark);
-            color: var(--accent-cyan);
-            border: 1px solid var(--accent-cyan);
-            font-family: monospace;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
-
-        .motion-progress-wrap {
-            width: 100%;
-            height: 8px;
-            background-color: var(--box-bg-dark);
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid var(--panel-border);
-        }
-
-        .motion-progress-fill {
-            height: 100%;
-            width: 100%;
-            background-color: var(--accent-cyan);
-            transition: width 0.3s ease, background-color 0.3s ease;
-        }
-
-        .motion-telemetry-text {
-            font-family: monospace;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            min-height: 16px;
-        }
-
-        .motion-stepper-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-        }
-
-        .btn-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            background-color: var(--box-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 10px 4px;
-            color: var(--text-secondary);
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .btn-step .step-idx {
-            font-family: monospace;
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-muted);
-        }
-
-        .btn-step:hover {
-            border-color: var(--accent-cyan);
-            color: var(--text-primary);
-            background-color: #1f2937;
-        }
-
-        .btn-step.active-step {
-            border-color: var(--accent-cyan);
-            background-color: rgba(0, 229, 255, 0.15);
-            color: var(--accent-cyan);
-        }
-        .btn-step.active-step .step-idx {
-            color: var(--accent-cyan);
-        }
-
-        .box-select-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-top: 8px;
-            border-top: 1px solid var(--panel-border);
-        }
-
-        .box-select-label {
-            font-size: 11px;
-            font-family: monospace;
-            color: var(--text-muted);
-            font-weight: 700;
-        }
-
-        .box-pills-wrap {
-            display: flex;
-            gap: 8px;
-        }
-
-        .pill-box-btn {
-            background-color: var(--box-bg-dark);
-            border: 1px solid var(--panel-border);
-            color: var(--text-secondary);
-            font-size: 10px;
-            font-weight: 700;
-            padding: 5px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: monospace;
-        }
-        .pill-box-btn:hover {
-            border-color: var(--text-primary);
-            color: var(--text-primary);
-        }
-        .pill-box-btn.selected {
-            background-color: var(--accent-cyan);
-            border-color: var(--accent-cyan);
-            color: #000000;
-            font-weight: 800;
         }
 
         /* Mobile Breakpoint */
         @media (max-width: 860px) {
-            body { padding: 10px 12px; }
-            header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .header-status-bar { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-            .esp-input-box { flex: 1; min-width: 180px; }
-            .image-display-frame { height: 260px; }
-            .no-image-title { font-size: 26px; }
+            body { padding: 12px 14px 40px; }
+            .deck-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .header-telemetry-bar { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+            .esp-ip-pill { flex: 1; min-width: 180px; }
+            .image-display-frame { height: 280px; }
             .middle-controls-grid { grid-template-columns: 1fr; gap: 12px; }
-            .motion-stepper-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .sequence-track-line-bg { display: none; }
+            .sequence-nodes-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
             .box-select-row { flex-direction: column; align-items: flex-start; }
-            .sliders-grid { grid-template-columns: 1fr; gap: 16px; }
+            .sliders-grid { grid-template-columns: 1fr; gap: 14px; }
             .bottom-actions-bar { flex-direction: column; gap: 12px; }
-            .btn-mag { width: 100%; }
+            .btn-mag { width: 100%; justify-content: center; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-title-wrap">
-            <h1>Dum-E</h1>
+    <!-- 0. MISSION CONTROL STATUS HEADER -->
+    <header class="deck-header">
+        <div class="header-brand">
+            <span class="brand-badge">DECK 01</span>
+            <div class="brand-title-wrap">
+                <h1 class="brand-name">Dum-E</h1>
+                <span class="brand-subtitle">Aerospace Robotic Control System</span>
+            </div>
         </div>
 
-        <div class="header-status-bar">
-            <div class="esp-input-box">
-                <label for="espIpInput">ESP32 IP:</label>
-                <input type="text" id="espIpInput" value="http://10.34.233.78" placeholder="http://192.168.1.X" onchange="updateEspIp()">
+        <div class="header-telemetry-bar">
+            <div class="esp-ip-pill">
+                <span class="telemetry-label">ESP32 IP</span>
+                <input type="text" id="espIpInput" class="telemetry-ip-input" value="http://10.34.233.78" placeholder="http://10.X.X.X" onchange="updateEspIp()">
             </div>
 
-            <div class="status-pill">
-                <div class="status-dot" id="pingDot"></div>
-                <span id="pingStatus">CONNECTING</span>
+            <div class="status-indicator-pill">
+                <span class="status-pulse-dot" id="pingDot"></span>
+                <span class="status-badge-text" id="pingStatus">CONNECTING</span>
             </div>
         </div>
     </header>
 
     <div class="app-container">
-        <!-- 1. TOP: Centered Big Image Window -->
+        <!-- CRITICAL HAZARD ALERT BANNER (Shown when Emergency Abort is triggered) -->
+        <div id="abortBanner" class="hazard-alert-banner" style="display: none;">
+            <div class="hazard-banner-content">
+                <div class="hazard-icon">🚨</div>
+                <div class="hazard-text">
+                    <strong>EMERGENCY ABORT ACTIVE</strong>
+                    <span>All actuator outputs locked in neutral position (90°). Electromagnet relay open.</span>
+                </div>
+            </div>
+            <button class="hazard-dismiss-btn" onclick="dismissAbortBanner()">Resume Standby</button>
+        </div>
+
+        <!-- 1. TOP: 16:9 Vision & Camera Viewport -->
         <div class="image-window-card">
             <div class="image-display-frame" id="displayFrame">
                 <!-- Shown when NO image is loaded -->
                 <div class="no-image-placeholder" id="noImagePlaceholder">
-                    <div class="no-image-title">NO IMAGE</div>
-                    <div class="no-image-subtitle">CLICK BELOW TO SNAP A PICTURE OR CHOOSE FROM GALLERY</div>
+                    <div class="placeholder-reticle">✛</div>
+                    <div class="no-image-title">No Video Feed Loaded</div>
+                    <div class="no-image-subtitle">Capture live photo from workbench camera or select from image library to initialize computer vision.</div>
                     <div class="placeholder-actions-row">
-                        <button class="btn-ph-cam" onclick="openCameraPicker(event)">📸 SNAP PHOTO</button>
-                        <button class="btn-ph-gal" onclick="openGalleryPicker(event)">🖼️ GALLERY</button>
+                        <button class="btn-primary-cyan" onclick="openCameraPicker(event)">📸 Snap Photo</button>
+                        <button class="btn-secondary-surface" onclick="openGalleryPicker(event)">🖼️ Gallery</button>
                     </div>
                 </div>
 
                 <!-- Displayed when image is uploaded (Tappable to set Base Reference) -->
-                <img id="annotatedImage" alt="Analyzed Workbench Image" onclick="handleImageTap(event)">
+                <img id="annotatedImage" alt="Analyzed Workbench Vision Frame" onclick="handleImageTap(event)">
             </div>
 
             <div class="tap-hint-bar" id="tapHintBar" style="display: none;">
-                💡 TAP ANYWHERE ON THE IMAGE TO SET ROBOT BASE REFERENCE POINT
+                💡 Tap anywhere on the image to calibrate robot base reference point
             </div>
 
             <div class="detection-bar">
-                <div>STATUS: <span id="telemetryStatus" style="color: var(--text-primary);">READY FOR IMAGE</span></div>
-                <div id="coinsCountTag" class="detection-coins-tag">0 COINS | 0 BINS</div>
+                <div>Telemetry: <span id="telemetryStatus" class="detection-status-text">READY FOR IMAGE</span></div>
+                <div id="coinsCountTag" class="detection-coins-tag">0 COINS • 0 BINS</div>
             </div>
         </div>
 
-        <!-- 2. MIDDLE ROW: 3 Control Boxes (Capture, Combined Detection & Base, Quick Actions) -->
+        <!-- 2. MIDDLE ROW: 3 Control Surfaces -->
         <div class="middle-controls-grid">
-            <!-- Box 1: Camera & Gallery Upload -->
-            <div class="control-box">
-                <div class="control-box-header">📷 IMAGE SOURCE</div>
-                <div class="upload-box-inner">
-                    <div class="upload-dual-row">
-                        <button class="btn-cam-action" onclick="openCameraPicker()">
-                            📸 CAMERA
+            <!-- Surface 1: Camera & Image Capture -->
+            <div class="control-surface">
+                <div class="surface-tag">Image Capture</div>
+                <div class="upload-surface-body">
+                    <div class="btn-row-dual">
+                        <button class="btn-primary-cyan" onclick="openCameraPicker()">
+                            📸 Snap Photo
                         </button>
-                        <button class="btn-gal-action" onclick="openGalleryPicker()">
-                            🖼️ GALLERY
+                        <button class="btn-secondary-surface" onclick="openGalleryPicker()">
+                            🖼️ Gallery
                         </button>
                     </div>
-                    <button class="btn-sample-demo" onclick="loadSampleDemoImage()">
+                    <button class="btn-tertiary-ghost" onclick="loadSampleDemoImage()">
                         Load Sample Workbench Pic
                     </button>
                     <!-- Camera Input: Direct camera capture on mobile phones -->
@@ -975,52 +1185,57 @@
                 </div>
             </div>
 
-            <!-- Box 2: COMBINED DETECTION & BASE CALIBRATION -->
-            <div class="control-box">
-                <div class="control-box-header">🎯 DETECTION & BASE CALIBRATION</div>
-                <div class="combined-calib-inner">
+            <!-- Surface 2: Detection & Base Calibration -->
+            <div class="control-surface">
+                <div class="surface-tag">Vision Calibration</div>
+                <div class="calibration-surface-body">
                     <!-- Detect & Refresh Bins -->
-                    <div class="calib-row-detect">
-                        <button class="btn-detect-bins" onclick="triggerDetectBins()">
-                            🔍 DETECT BINS (REFRESH)
+                    <div class="calib-sub-block">
+                        <button class="btn-secondary-surface" onclick="triggerDetectBins()">
+                            🔍 Detect Bins (Refresh)
                         </button>
-                        <div class="detect-bin-status" id="binDetectionStatus">Colored Bins: Scanning</div>
+                        <div class="detect-status-line" id="binDetectionStatus">Colored Bins: Scanning</div>
                     </div>
 
                     <div class="calib-divider"></div>
 
                     <!-- Set Robot Base Point -->
-                    <div class="calib-row-base">
-                        <div class="base-input-row">
+                    <div class="calib-sub-block">
+                        <div class="base-coord-row">
                             <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
-                            <button class="btn-set-base" onclick="applyManualBasePoint()">SET BASE</button>
+                            <button class="btn-primary-cyan" style="padding: 8px 12px; font-size: 11px;" onclick="applyManualBasePoint()">Set Base</button>
                         </div>
-                        <div class="base-status-text" id="baseStatusLabel">SET BASE (Or Tap Image)</div>
+                        <div class="base-status-hint" id="baseStatusLabel">Base Reference: (400, 570) • Or Tap Image</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Box 3: Quick Sorting & Emergency Buttons -->
-            <div class="control-box">
-                <div class="control-box-header">⚡ QUICK SORT & SAFETY</div>
-                <div class="actions-box-inner">
-                    <div class="box-row-top">
-                        <button class="btn-box-action" onclick="sortToBox(1)">TO BOX 1</button>
-                        <button class="btn-box-action" onclick="sortToBox(2)">TO BOX 2</button>
-                        <button class="btn-box-action" onclick="sortToBox(3)">TO BOX 3</button>
+            <!-- Surface 3: Direct Routing & Sorting -->
+            <div class="control-surface">
+                <div class="surface-tag">Direct Routing</div>
+                <div class="routing-surface-body">
+                    <div class="route-buttons-row">
+                        <button class="btn-route" onclick="sortToBox(1)">
+                            <span class="route-dot" style="background-color: #10B981;"></span> Box 1
+                        </button>
+                        <button class="btn-route" onclick="sortToBox(2)">
+                            <span class="route-dot" style="background-color: #EF4444;"></span> Box 2
+                        </button>
+                        <button class="btn-route" onclick="sortToBox(3)">
+                            <span class="route-dot" style="background-color: #3B82F6;"></span> Box 3
+                        </button>
                     </div>
-                    <div class="box-row-bottom">
-                        <button class="btn-cancel" onclick="cancelAction()">CANCEL</button>
-                        <button class="btn-abort" onclick="abortEmergency()">ABORT</button>
+                    <div class="route-sub-row">
+                        <button class="btn-cancel-action" onclick="cancelAction()">Cancel Current Action</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2.5 INTERMEDIATE: PICK & PLACE MOTION STEPPER & STATUS BAR -->
+        <!-- 3. MOTION SEQUENCE LINEAR PROGRESSION TRACK (SUBWAY MAP) -->
         <div class="motion-panel">
             <div class="motion-header-row">
-                <span class="motion-panel-title">🎯 MOTION SEQUENCE & STEPPER CONTROL</span>
+                <span class="motion-panel-title">Motion Sequence Progression</span>
                 <span class="motion-phase-badge" id="motionPhaseBadge">IDLE</span>
             </div>
 
@@ -1028,52 +1243,89 @@
                 <div class="motion-progress-fill" id="motionProgressBar" style="width: 100%;"></div>
             </div>
 
-            <div class="motion-telemetry-text" id="motionDetailMsg">ARM READY IN NEUTRAL POSITION</div>
+            <div class="motion-telemetry-text" id="motionDetailMsg">Arm ready in neutral standby position</div>
 
-            <!-- Clickable 6-Step Movement Action Pipeline -->
-            <div class="motion-stepper-grid">
-                <button class="btn-step" id="stepBtn1" onclick="runSingleStep('hover_coin', 1)">
-                    <span class="step-idx">① HOVER</span>
-                    <span>OVER COIN</span>
-                </button>
-                <button class="btn-step" id="stepBtn2" onclick="runSingleStep('pick_coin', 2)">
-                    <span class="step-idx">② PICK</span>
-                    <span>MAGNET ON</span>
-                </button>
-                <button class="btn-step" id="stepBtn3" onclick="runSingleStep('lift_coin', 3)">
-                    <span class="step-idx">③ LIFT</span>
-                    <span>SAFE ASCENT</span>
-                </button>
-                <button class="btn-step" id="stepBtn4" onclick="runTransitStep()">
-                    <span class="step-idx">④ TRANSIT</span>
-                    <span>TO BOX</span>
-                </button>
-                <button class="btn-step" id="stepBtn5" onclick="runDropStep()">
-                    <span class="step-idx">⑤ DROP</span>
-                    <span>MAGNET OFF</span>
-                </button>
-                <button class="btn-step" id="stepBtn6" onclick="runSingleStep('home', 6)">
-                    <span class="step-idx">⑥ HOME</span>
-                    <span>NEUTRAL (90°)</span>
-                </button>
+            <!-- Linear Progression Track -->
+            <div class="sequence-track-wrap">
+                <div class="sequence-track-line-bg">
+                    <div class="sequence-track-line-fill" id="sequenceTrackFill"></div>
+                </div>
+
+                <div class="sequence-nodes-grid">
+                    <button class="sequence-node" id="stepBtn1" onclick="runSingleStep('hover_coin', 1)">
+                        <div class="node-indicator">1</div>
+                        <div class="node-info">
+                            <span class="node-title">Hover</span>
+                            <span class="node-subtitle">Over Coin</span>
+                        </div>
+                    </button>
+
+                    <button class="sequence-node" id="stepBtn2" onclick="runSingleStep('pick_coin', 2)">
+                        <div class="node-indicator">2</div>
+                        <div class="node-info">
+                            <span class="node-title">Pick</span>
+                            <span class="node-subtitle">Magnet On</span>
+                        </div>
+                    </button>
+
+                    <button class="sequence-node" id="stepBtn3" onclick="runSingleStep('lift_coin', 3)">
+                        <div class="node-indicator">3</div>
+                        <div class="node-info">
+                            <span class="node-title">Lift</span>
+                            <span class="node-subtitle">Safe Ascent</span>
+                        </div>
+                    </button>
+
+                    <button class="sequence-node" id="stepBtn4" onclick="runTransitStep()">
+                        <div class="node-indicator">4</div>
+                        <div class="node-info">
+                            <span class="node-title">Transit</span>
+                            <span class="node-subtitle">To Box</span>
+                        </div>
+                    </button>
+
+                    <button class="sequence-node" id="stepBtn5" onclick="runDropStep()">
+                        <div class="node-indicator">5</div>
+                        <div class="node-info">
+                            <span class="node-title">Drop</span>
+                            <span class="node-subtitle">Magnet Off</span>
+                        </div>
+                    </button>
+
+                    <button class="sequence-node" id="stepBtn6" onclick="runSingleStep('home', 6)">
+                        <div class="node-indicator">6</div>
+                        <div class="node-info">
+                            <span class="node-title">Home</span>
+                            <span class="node-subtitle">Neutral (90°)</span>
+                        </div>
+                    </button>
+                </div>
             </div>
 
             <!-- Destination Box Selector for Stepper Actions -->
             <div class="box-select-row">
-                <span class="box-select-label">DESTINATION BOX FOR STEP ④ & ⑤:</span>
+                <span class="box-select-label">Destination Box for Transit & Drop:</span>
                 <div class="box-pills-wrap">
-                    <button class="pill-box-btn selected" id="pillBox1" onclick="selectActiveBox(1)">BOX 1 (GREEN)</button>
-                    <button class="pill-box-btn" id="pillBox2" onclick="selectActiveBox(2)">BOX 2 (RED)</button>
-                    <button class="pill-box-btn" id="pillBox3" onclick="selectActiveBox(3)">BOX 3 (BLUE)</button>
+                    <button class="pill-box-btn selected" id="pillBox1" onclick="selectActiveBox(1)">
+                        <span class="pill-dot" style="background-color: #10B981;"></span> Box 1 (Green)
+                    </button>
+                    <button class="pill-box-btn" id="pillBox2" onclick="selectActiveBox(2)">
+                        <span class="pill-dot" style="background-color: #EF4444;"></span> Box 2 (Red)
+                    </button>
+                    <button class="pill-box-btn" id="pillBox3" onclick="selectActiveBox(3)">
+                        <span class="pill-dot" style="background-color: #3B82F6;"></span> Box 3 (Blue)
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- 3. BOTTOM: all SLIDER CONTROLS Full-Width Container -->
+        <!-- 4. ACTUATOR TELEMETRY & TACTILE SLIDERS -->
         <div class="sliders-panel">
-            <div class="sliders-title">
-                <span>all SLIDER CONTROLS</span>
-                <button class="btn-neutral" onclick="resetNeutral()">RESET NEUTRAL (90°)</button>
+            <div class="sliders-title-row">
+                <span class="sliders-title-text">Actuator Telemetry & Manual Control</span>
+                <button class="btn-secondary-surface" style="padding: 7px 14px; font-size: 11px;" onclick="resetNeutral()">
+                    Reset Neutral (90°)
+                </button>
             </div>
 
             <div class="sliders-grid">
@@ -1103,12 +1355,38 @@
                     </div>
                     <input type="range" id="joint2" min="0" max="180" value="90" oninput="onSliderMove(2, this.value)" onchange="sendJoint(2, this.value)">
                 </div>
-
             </div>
 
             <div class="bottom-actions-bar">
-                <button class="btn-mag" id="magBtn" onclick="toggleMagnet()">ELECTROMAGNET: OFF</button>
-                <div style="font-size: 12px; color: var(--text-muted); font-family: monospace;">DUM-E • HARDWARE READY</div>
+                <button class="btn-mag" id="magBtn" onclick="toggleMagnet()">
+                    <span>⚡</span> <span>ELECTROMAGNET: OFF</span>
+                </button>
+                <div class="hardware-ready-badge">DUM-E • HARDWARE READY</div>
+            </div>
+        </div>
+
+        <!-- 5. SAFETY INTERLOCK: MASSIVE HIGH-VISIBILITY EMERGENCY ABORT -->
+        <div class="safety-interlock-bar">
+            <button class="btn-emergency-abort" onclick="abortEmergency()">
+                <span>🚨</span> EMERGENCY ABORT — STOP ALL MOTIONS
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Camera Capture Modal -->
+    <div id="cameraModal" class="camera-modal" style="display: none;">
+        <div class="camera-modal-content">
+            <div class="camera-modal-header">
+                <span>📸 LIVE CAMERA CAPTURE</span>
+                <button class="camera-close-btn" onclick="closeCameraModal()">✕</button>
+            </div>
+            <div class="camera-video-wrap">
+                <video id="cameraVideo" autoplay playsinline muted></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+            </div>
+            <div class="camera-modal-actions">
+                <button class="btn-primary-cyan" style="flex: 2; padding: 12px;" onclick="captureLivePhoto()">Capture Photo</button>
+                <button class="btn-secondary-surface" style="flex: 1; padding: 12px;" onclick="closeCameraModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -1189,7 +1467,7 @@
                 if (data.status === 'success') {
                     renderResults(data);
                     document.getElementById('basePointInput').value = `${pixelX}, ${pixelY}`;
-                    document.getElementById('baseStatusLabel').innerText = `BASE POINT: (${pixelX}, ${pixelY}) px`;
+                    document.getElementById('baseStatusLabel').innerText = `Base Point: (${pixelX}, ${pixelY}) px`;
                     document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
                     document.getElementById('telemetryStatus').innerText = `BASE SET AT (${pixelX}, ${pixelY}) - IK RECALCULATED`;
                 }
@@ -1214,7 +1492,7 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     renderResults(data);
-                    document.getElementById('baseStatusLabel').innerText = `BASE POINT: (${px}, ${py}) px`;
+                    document.getElementById('baseStatusLabel').innerText = `Base Point: (${px}, ${py}) px`;
                     document.getElementById('baseStatusLabel').style.color = "var(--accent-green)";
                 }
             } catch (e) {
@@ -1255,7 +1533,7 @@
 
             const numCoins = data.coins_found || 0;
             const numBins = data.bins_found || 0;
-            document.getElementById('coinsCountTag').innerText = `${numCoins} COIN${numCoins === 1 ? '' : 'S'} | ${numBins} BIN${numBins === 1 ? '' : 'S'}`;
+            document.getElementById('coinsCountTag').innerText = `${numCoins} COIN${numCoins === 1 ? '' : 'S'} • ${numBins} BIN${numBins === 1 ? '' : 'S'}`;
 
             if (data.bins && data.bins.length > 0) {
                 const binNames = data.bins.map(b => b.name).join(', ');
@@ -1297,19 +1575,32 @@
             activeTargetBox = boxNum;
             for (let i = 1; i <= 3; i++) {
                 const el = document.getElementById('pillBox' + i);
-                if (el) el.className = (i === boxNum) ? 'pill-box-btn selected' : 'pill-box-btn';
+                if (el) {
+                    if (i === boxNum) el.classList.add('selected');
+                    else el.classList.remove('selected');
+                }
             }
             const msgEl = document.getElementById('motionDetailMsg');
-            if (msgEl) msgEl.innerText = `DESTINATION SET TO BOX ${boxNum}. READY FOR STEP ④ / ⑤.`;
+            if (msgEl) msgEl.innerText = `Destination set to Box ${boxNum}. Ready for step 4 & 5.`;
         }
 
+        // Linear progression step highlighter with Subway Map visualization
         function highlightStep(stepNum) {
             for (let i = 1; i <= 6; i++) {
                 const el = document.getElementById('stepBtn' + i);
                 if (el) {
-                    if (i === stepNum) el.classList.add('active-step');
-                    else el.classList.remove('active-step');
+                    el.classList.remove('active-step', 'completed-step');
+                    if (i === stepNum) {
+                        el.classList.add('active-step');
+                    } else if (i < stepNum && stepNum <= 6) {
+                        el.classList.add('completed-step');
+                    }
                 }
+            }
+            const trackFill = document.getElementById('sequenceTrackFill');
+            if (trackFill) {
+                const pct = Math.min(100, Math.max(0, ((stepNum - 1) / 5) * 100));
+                trackFill.style.width = pct + '%';
             }
         }
 
@@ -1319,7 +1610,7 @@
             const badgeEl = document.getElementById('motionPhaseBadge');
             const barEl = document.getElementById('motionProgressBar');
 
-            if (msgEl) msgEl.innerText = `EXECUTING STEP ${stepIndex}...`;
+            if (msgEl) msgEl.innerText = `Executing Step ${stepIndex} (${stepName})...`;
             if (badgeEl) badgeEl.innerText = `STEP ${stepIndex}`;
             if (barEl) barEl.style.width = `${Math.min(100, Math.round(stepIndex * 16.6))}%`;
 
@@ -1336,11 +1627,11 @@
                         magState = (data.magnet === "on");
                         updateMagnetBtn();
                     }
-                    if (msgEl) msgEl.innerText = `STEP ${stepIndex} (${stepName.toUpperCase()}) READY.`;
+                    if (msgEl) msgEl.innerText = `Step ${stepIndex} (${stepName}) completed.`;
                 }
             } catch (e) {
                 console.error(e);
-                if (msgEl) msgEl.innerText = `STEP ${stepIndex} ERROR: ` + e;
+                if (msgEl) msgEl.innerText = `Step ${stepIndex} error: ` + e;
             }
         }
 
@@ -1355,7 +1646,7 @@
         function updateMagnetBtn() {
             const btn = document.getElementById('magBtn');
             if (btn) {
-                btn.innerText = magState ? 'ELECTROMAGNET: ON' : 'ELECTROMAGNET: OFF';
+                btn.innerHTML = magState ? '<span>⚡</span> <span>ELECTROMAGNET: ON</span>' : '<span>⚡</span> <span>ELECTROMAGNET: OFF</span>';
                 btn.className = magState ? 'btn-mag active' : 'btn-mag';
             }
         }
@@ -1374,7 +1665,7 @@
                     if (data) {
                         if (data.message) {
                             if (telemetry) telemetry.innerText = data.message.toUpperCase();
-                            if (msgEl) msgEl.innerText = data.message.toUpperCase();
+                            if (msgEl) msgEl.innerText = data.message;
                         }
                         if (data.phase && badgeEl) {
                             badgeEl.innerText = data.phase;
@@ -1421,10 +1712,17 @@
         // Cancel and Abort
         function cancelAction() {
             document.getElementById('telemetryStatus').innerText = "OPERATION CANCELLED";
+            const msgEl = document.getElementById('motionDetailMsg');
+            if (msgEl) msgEl.innerText = "Operation cancelled by operator";
         }
 
         async function abortEmergency() {
+            const banner = document.getElementById('abortBanner');
+            if (banner) banner.style.display = 'flex';
             document.getElementById('telemetryStatus').innerText = "EMERGENCY ABORT TRIGGERED!";
+            const msgEl = document.getElementById('motionDetailMsg');
+            if (msgEl) msgEl.innerText = "🚨 EMERGENCY ABORT ACTIVE — ACTUATORS HALTED";
+
             try {
                 await fetch('/api/abort', {
                     method: 'POST',
@@ -1436,6 +1734,14 @@
             }
             resetNeutral();
             if (magState) toggleMagnet();
+        }
+
+        function dismissAbortBanner() {
+            const banner = document.getElementById('abortBanner');
+            if (banner) banner.style.display = 'none';
+            document.getElementById('telemetryStatus').innerText = "STANDBY - READY FOR ACTION";
+            const msgEl = document.getElementById('motionDetailMsg');
+            if (msgEl) msgEl.innerText = "Arm ready in neutral standby position";
         }
 
         // Hardware Communication
@@ -1450,7 +1756,7 @@
                     res = await fetch(ESP_IP + '/status', { method: 'GET', mode: 'cors' }).catch(() => null);
                 }
                 if (res && res.ok) {
-                    dot.className = "status-dot online";
+                    dot.className = "status-pulse-dot online";
                     statusText.innerText = "ONLINE";
                     statusText.style.color = "var(--accent-green)";
 
@@ -1472,7 +1778,7 @@
                     throw new Error();
                 }
             } catch (e) {
-                dot.className = "status-dot offline";
+                dot.className = "status-pulse-dot offline";
                 statusText.innerText = "OFFLINE";
                 statusText.style.color = "var(--accent-red)";
             }
@@ -1512,7 +1818,7 @@
             if (labels[jointIndex]) {
                 document.getElementById(labels[jointIndex]).innerText = val + '°';
             }
-            // Joint 1 (Shoulder) inverted: 180 - rawVal; Joint 2 (Elbow) direct flipped: rawVal
+            // Joint 1 (Shoulder) inverted: 180 - rawVal; Joint 2 (Elbow) direct: rawVal
             const rawVal = parseInt(val);
             const sendAngle = (jointIndex === 1) ? (180 - rawVal) : rawVal;
 
@@ -1534,9 +1840,7 @@
         let magState = false;
         async function toggleMagnet() {
             magState = !magState;
-            const btn = document.getElementById('magBtn');
-            btn.innerText = magState ? 'ELECTROMAGNET: ON' : 'ELECTROMAGNET: OFF';
-            btn.className = magState ? 'btn-mag active' : 'btn-mag';
+            updateMagnetBtn();
             await postData('/grip', { state: magState ? "close" : "open" });
         }
 
@@ -1623,27 +1927,9 @@
             }, 'image/jpeg', 0.95);
         }
 
-        // Periodic checks
+        // Periodic connection checks
         setInterval(checkConnection, 3000);
         checkConnection();
     </script>
-
-    <!-- Live Camera Capture Modal -->
-    <div id="cameraModal" class="camera-modal" style="display: none;">
-        <div class="camera-modal-content">
-            <div class="camera-modal-header">
-                <span>📸 LIVE CAMERA CAPTURE</span>
-                <button class="camera-close-btn" onclick="closeCameraModal()">✕</button>
-            </div>
-            <div class="camera-video-wrap">
-                <video id="cameraVideo" autoplay playsinline muted></video>
-                <canvas id="cameraCanvas" style="display: none;"></canvas>
-            </div>
-            <div class="camera-modal-actions">
-                <button class="btn-snap-modal" onclick="captureLivePhoto()">📸 CAPTURE PHOTO</button>
-                <button class="btn-cancel-modal" onclick="closeCameraModal()">CANCEL</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
