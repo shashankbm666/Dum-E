@@ -21,11 +21,11 @@
 
             --border-subtle: rgba(255, 255, 255, 0.08);
             --border-medium: rgba(255, 255, 255, 0.14);
-            --border-focus: #00e5ff;
+            --border-focus: #38bdf8;
 
-            --accent-cyan: #00e5ff;
-            --accent-cyan-hover: #33ebff;
-            --accent-cyan-dim: rgba(0, 229, 255, 0.12);
+            --accent-cyan: #38bdf8;
+            --accent-cyan-hover: #0ea5e9;
+            --accent-cyan-dim: rgba(56, 189, 248, 0.14);
 
             --accent-red: #ff3b30;
             --accent-red-hover: #e0281d;
@@ -40,7 +40,7 @@
             --text-primary: #f3f4f6;
             --text-secondary: #9ca3af;
             --text-muted: #6b7280;
-            --text-accent: #00e5ff;
+            --text-accent: #38bdf8;
 
             --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-mono: 'Roboto Mono', 'SF Mono', Consolas, monospace;
@@ -318,24 +318,27 @@
             line-height: 1.4;
         }
 
-        .placeholder-actions-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 18px;
-        }
-
         .tap-hint-bar {
             width: 100%;
             background-color: var(--surface-elevated);
             color: var(--accent-cyan);
             font-size: 11px;
             font-weight: 600;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             padding: 8px 12px;
             margin-top: 10px;
             border-radius: 6px;
             border: 1px solid var(--border-subtle);
             letter-spacing: 0.02em;
+        }
+
+        .ui-icon {
+            display: inline-block;
+            vertical-align: middle;
+            flex-shrink: 0;
         }
 
         .detection-bar {
@@ -752,7 +755,7 @@
             background-color: var(--accent-cyan);
             border-color: #ffffff;
             color: #000000;
-            box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
         }
         .sequence-node.active-step .node-title {
             color: var(--accent-cyan);
@@ -1096,9 +1099,9 @@
         }
 
         @keyframes pulseHighlight {
-            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(0, 229, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
         }
         .pulse-highlight {
             animation: pulseHighlight 0.8s ease infinite;
@@ -1133,7 +1136,13 @@
         <!-- CRITICAL HAZARD ALERT BANNER (Shown when Emergency Abort is triggered) -->
         <div id="abortBanner" class="hazard-alert-banner" style="display: none;">
             <div class="hazard-banner-content">
-                <div class="hazard-icon">🚨</div>
+                <div class="hazard-icon">
+                    <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
                 <div class="hazard-text">
                     <strong>EMERGENCY ABORT ACTIVE</strong>
                     <span>All actuator outputs locked in neutral position (90°). Electromagnet relay open.</span>
@@ -1145,15 +1154,19 @@
         <!-- 1. TOP: 16:9 Vision & Camera Viewport -->
         <div class="image-window-card">
             <div class="image-display-frame" id="displayFrame">
-                <!-- Shown when NO image is loaded -->
+                <!-- Shown when NO image is loaded (Action duplication removed: single primary set below) -->
                 <div class="no-image-placeholder" id="noImagePlaceholder">
-                    <div class="placeholder-reticle">✛</div>
-                    <div class="no-image-title">No Video Feed Loaded</div>
-                    <div class="no-image-subtitle">Capture live photo from workbench camera or select from image library to initialize computer vision.</div>
-                    <div class="placeholder-actions-row">
-                        <button class="btn-primary-cyan" onclick="openCameraPicker(event)">📸 Snap Photo</button>
-                        <button class="btn-secondary-surface" onclick="openGalleryPicker(event)">🖼️ Gallery</button>
+                    <div class="placeholder-reticle">
+                        <svg class="ui-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="22" y1="12" x2="18" y2="12"/>
+                            <line x1="6" y1="12" x2="2" y2="12"/>
+                            <line x1="12" y1="6" x2="12" y2="2"/>
+                            <line x1="12" y1="22" x2="12" y2="18"/>
+                        </svg>
                     </div>
+                    <div class="no-image-title">No Video Feed Loaded</div>
+                    <div class="no-image-subtitle">Use the primary controls below to capture from workbench camera or select from image library.</div>
                 </div>
 
                 <!-- Displayed when image is uploaded (Tappable to set Base Reference) -->
@@ -1161,7 +1174,12 @@
             </div>
 
             <div class="tap-hint-bar" id="tapHintBar" style="display: none;">
-                💡 Tap anywhere on the image to calibrate robot base reference point
+                <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="9" y1="18" x2="15" y2="18"/>
+                    <line x1="10" y1="22" x2="14" y2="22"/>
+                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+                </svg>
+                <span>Tap anywhere on the image to calibrate robot base reference point</span>
             </div>
 
             <div class="detection-bar">
@@ -1178,14 +1196,29 @@
                 <div class="upload-surface-body">
                     <div class="btn-row-dual">
                         <button class="btn-primary-cyan" onclick="openCameraPicker()">
-                            📸 Snap Photo
+                            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <span>Snap Photo</span>
                         </button>
                         <button class="btn-secondary-surface" onclick="openGalleryPicker()">
-                            🖼️ Gallery
+                            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            <span>Gallery</span>
                         </button>
                     </div>
                     <button class="btn-tertiary-ghost" onclick="loadSampleDemoImage()">
-                        Load Sample Workbench Pic
+                        <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span>Load Sample Workbench Pic</span>
                     </button>
                     <!-- Camera Input: Direct camera capture on mobile phones -->
                     <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this.files)">
@@ -1201,7 +1234,11 @@
                     <!-- Detect & Refresh Bins -->
                     <div class="calib-sub-block">
                         <button class="btn-secondary-surface" onclick="triggerDetectBins()">
-                            🔍 Detect Bins (Refresh)
+                            <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <span>Detect Bins (Refresh)</span>
                         </button>
                         <div class="detect-status-line" id="binDetectionStatus">Colored Bins: Scanning</div>
                     </div>
@@ -1212,7 +1249,13 @@
                     <div class="calib-sub-block">
                         <div class="base-coord-row">
                             <input type="text" id="basePointInput" class="base-coord-input" value="400, 570" placeholder="X, Y (px)">
-                            <button class="btn-primary-cyan" id="btnSetBase" style="padding: 8px 12px; font-size: 11px;" onclick="applyManualBasePoint()">Set Base</button>
+                            <button class="btn-primary-cyan" id="btnSetBase" style="padding: 8px 12px; font-size: 11px;" onclick="applyManualBasePoint()">
+                                <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <span>Set Base</span>
+                            </button>
                         </div>
                         <div class="base-status-hint" id="baseStatusLabel">Base Reference: (400, 570) • Or Tap Image</div>
                     </div>
@@ -1333,7 +1376,11 @@
             <div class="sliders-title-row">
                 <span class="sliders-title-text">Actuator Telemetry & Manual Control</span>
                 <button class="btn-secondary-surface" style="padding: 7px 14px; font-size: 11px;" onclick="resetNeutral()">
-                    Reset Neutral (90°)
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="1 4 1 10 7 10"/>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                    <span>Reset Neutral (90°)</span>
                 </button>
             </div>
 
@@ -1368,7 +1415,10 @@
 
             <div class="bottom-actions-bar">
                 <button class="btn-mag" id="magBtn" onclick="toggleMagnet()">
-                    <span>⚡</span> <span>ELECTROMAGNET: OFF</span>
+                    <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span>ELECTROMAGNET: OFF</span>
                 </button>
                 <div class="hardware-ready-badge">DUM-E • HARDWARE READY</div>
             </div>
@@ -1377,7 +1427,12 @@
         <!-- 5. SAFETY INTERLOCK: MASSIVE HIGH-VISIBILITY EMERGENCY ABORT -->
         <div class="safety-interlock-bar">
             <button class="btn-emergency-abort" onclick="abortEmergency()">
-                <span>🚨</span> EMERGENCY ABORT — STOP ALL MOTIONS
+                <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>EMERGENCY ABORT — STOP ALL MOTIONS</span>
             </button>
         </div>
     </div>
@@ -1386,7 +1441,13 @@
     <div id="cameraModal" class="camera-modal" style="display: none;">
         <div class="camera-modal-content">
             <div class="camera-modal-header">
-                <span>📸 LIVE CAMERA CAPTURE</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>LIVE CAMERA CAPTURE</span>
+                </div>
                 <button class="camera-close-btn" onclick="closeCameraModal()">✕</button>
             </div>
             <div class="camera-video-wrap">
@@ -1394,7 +1455,13 @@
                 <canvas id="cameraCanvas" style="display: none;"></canvas>
             </div>
             <div class="camera-modal-actions">
-                <button class="btn-primary-cyan" style="flex: 2; padding: 12px;" onclick="captureLivePhoto()">Capture Photo</button>
+                <button class="btn-primary-cyan" style="flex: 2; padding: 12px;" onclick="captureLivePhoto()">
+                    <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>Capture Photo</span>
+                </button>
                 <button class="btn-secondary-surface" style="flex: 1; padding: 12px;" onclick="closeCameraModal()">Cancel</button>
             </div>
         </div>
@@ -1675,7 +1742,8 @@
         function updateMagnetBtn() {
             const btn = document.getElementById('magBtn');
             if (btn) {
-                btn.innerHTML = magState ? '<span>⚡</span> <span>ELECTROMAGNET: ON</span>' : '<span>⚡</span> <span>ELECTROMAGNET: OFF</span>';
+                const zapIcon = '<svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+                btn.innerHTML = `${zapIcon} <span>ELECTROMAGNET: ${magState ? 'ON' : 'OFF'}</span>`;
                 btn.className = magState ? 'btn-mag active' : 'btn-mag';
             }
         }
@@ -1750,7 +1818,7 @@
             if (banner) banner.style.display = 'flex';
             document.getElementById('telemetryStatus').innerText = "EMERGENCY ABORT TRIGGERED!";
             const msgEl = document.getElementById('motionDetailMsg');
-            if (msgEl) msgEl.innerText = "🚨 EMERGENCY ABORT ACTIVE — ACTUATORS HALTED";
+            if (msgEl) msgEl.innerText = "EMERGENCY ABORT ACTIVE — ACTUATORS HALTED";
 
             try {
                 await fetch('/api/abort', {
