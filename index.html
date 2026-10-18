@@ -963,7 +963,9 @@
                         if (data && data.base !== undefined) {
                             document.getElementById('joint0').value = data.base;
                             document.getElementById('baseVal').innerText = data.base + '°';
-                            document.getElementById('joint1').value = data.shoulder;
+                            const uiShoulder = 180 - parseInt(data.shoulder);
+                            document.getElementById('joint1').value = uiShoulder;
+                            document.getElementById('shoulderVal').innerText = uiShoulder + '°';
                             const uiElbow = 180 - parseInt(data.elbow);
                             document.getElementById('joint2').value = uiElbow;
                             document.getElementById('elbowVal').innerText = uiElbow + '°';
@@ -999,9 +1001,9 @@
             if (labels[jointIndex]) {
                 document.getElementById(labels[jointIndex]).innerText = val + '°';
             }
-            // Reverse Joint 2 (Elbow) in webpage so 0°=Back and 180°=Front
+            // Invert Shoulder (Joint 1) & Elbow (Joint 2): 0° = Lean/Fold Back, 90° = Center, 180° = Reach Forward
             const rawVal = parseInt(val);
-            const sendAngle = (jointIndex === 2) ? (180 - rawVal) : rawVal;
+            const sendAngle = (jointIndex === 1 || jointIndex === 2) ? (180 - rawVal) : rawVal;
 
             // Throttle: send at most every 50ms per joint for real-time control
             const now = Date.now();
@@ -1014,7 +1016,7 @@
         function sendJoint(jointIndex, angleValue) {
             // Final send on mouse-up to guarantee the last value arrives
             const rawVal = parseInt(angleValue);
-            const sendAngle = (jointIndex === 2) ? (180 - rawVal) : rawVal;
+            const sendAngle = (jointIndex === 1 || jointIndex === 2) ? (180 - rawVal) : rawVal;
             postData('/joint', { joint: parseInt(jointIndex), angle: sendAngle });
         }
 
