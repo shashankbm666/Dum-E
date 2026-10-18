@@ -20,6 +20,11 @@ def create_mock_app():
         "shoulder": 90,
         "elbow": 90,
         "wrist": 90,
+        "targetBase": 90,
+        "targetShoulder": 90,
+        "targetElbow": 90,
+        "targetWrist": 90,
+        "isMoving": False,
         "magnetOn": False,
         "autoMode": False
     }
@@ -35,6 +40,23 @@ def create_mock_app():
     @app.route('/status', methods=['GET'])
     def get_status():
         return jsonify(state)
+
+    @app.route('/move', methods=['POST'])
+    def set_move():
+        """Smooth multi-joint movement endpoint."""
+        if state["autoMode"]:
+            return jsonify({"error": "Auto mode active"}), 403
+
+        data = request.get_json(force=True, silent=True) or {}
+        for j_name in ["base", "shoulder", "elbow", "wrist"]:
+            if j_name in data:
+                val = max(0, min(180, int(data[j_name])))
+                state[j_name] = val
+                state[f"target{j_name.capitalize()}"] = val
+
+        elbow_desc = " (SLOW DESCENT)" if data.get("elbowDelay", 0) >= 35 else ""
+        print(f"[MOCK ESP32] Smooth Move -> Base:{state['base']}° Shoulder:{state['shoulder']}° Elbow:{state['elbow']}°{elbow_desc} Wrist:{state['wrist']}°")
+        return jsonify({"status": "success", "state": state})
 
     @app.route('/joint', methods=['POST'])
     def set_joint():
@@ -60,7 +82,8 @@ def create_mock_app():
             return jsonify({"error": f"Invalid joint {joint}"}), 400
 
         state[name] = angle
-        print(f"[MOCK ESP32] Joint {joint} ({name.upper()}) -> {angle}°")
+        state[f"target{name.capitalize()}"] = angle
+        print(f"[MOCK ESP32] Joint {joint} ({name.upper()}) -> {angle}° (smooth glide)")
         return jsonify({"status": "success", "joint": joint, "angle": angle})
 
     @app.route('/grip', methods=['POST'])

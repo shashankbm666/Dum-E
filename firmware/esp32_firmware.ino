@@ -41,13 +41,43 @@ Servo wristServo;
 // Web Server on port 80
 AsyncWebServer server(80);
 
-// Hardware State
+// Hardware Position State (Current Physical Angles)
+int currentBase     = 90;
+int currentShoulder = 90;
+int currentElbow    = 90;
+int currentWrist    = 90;
+
+// Target Angles (Commanded by user or automated routines)
+int targetBase     = 90;
+int targetShoulder = 90;
+int targetElbow    = 90;
+int targetWrist    = 90;
+
+// Aliases for compatibility
 int baseAngle     = 90;
 int shoulderAngle = 90;
 int elbowAngle    = 90;
 int wristAngle    = 90;
+
 bool magnetOn     = false;
 bool autoMode     = false;
+
+// Smooth Stepping Delays (ms per 1-degree step)
+// Base & Shoulder: 20ms per degree (smooth and steady across bins)
+int baseStepDelay     = 20;
+int shoulderStepDelay = 20;
+
+// Elbow servo: Extra-slow descent to pick or drop coin gently (45ms per deg), steady ascent (25ms per deg)
+int elbowDownDelay    = 45;
+int elbowUpDelay      = 25;
+
+int wristStepDelay    = 20;
+
+// Timers for rate limiting
+unsigned long lastBaseTick     = 0;
+unsigned long lastShoulderTick = 0;
+unsigned long lastElbowTick    = 0;
+unsigned long lastWristTick    = 0;
 
 // Helper to inject CORS headers for browser frontends
 void addCORS(AsyncWebServerResponse* res) {
@@ -134,13 +164,21 @@ void setup() {
         #if ARDUINOJSON_VERSION_MAJOR >= 7
             JsonDocument doc;
         #else
-            StaticJsonDocument<256> doc;
+            StaticJsonDocument<384> doc;
         #endif
+        bool isMoving = (currentBase != targetBase || currentShoulder != targetShoulder ||
+                         currentElbow != targetElbow || currentWrist != targetWrist);
+
         doc["status"] = "ok";
-        doc["base"] = baseAngle;
-        doc["shoulder"] = shoulderAngle;
-        doc["elbow"] = elbowAngle;
-        doc["wrist"] = wristAngle;
+        doc["base"] = currentBase;
+        doc["shoulder"] = currentShoulder;
+        doc["elbow"] = currentElbow;
+        doc["wrist"] = currentWrist;
+        doc["targetBase"] = targetBase;
+        doc["targetShoulder"] = targetShoulder;
+        doc["targetElbow"] = targetElbow;
+        doc["targetWrist"] = targetWrist;
+        doc["isMoving"] = isMoving;
         doc["magnet"] = magnetOn;
         doc["autoMode"] = autoMode;
 
@@ -151,7 +189,7 @@ void setup() {
         req->send(res);
     });
 
-    // Set Joint Angle (0=Base, 1=Shoulder, 2=Elbow, 3=Wrist)
+    // Set Joint Angle with Smooth Stepping (0=Base, 1=Shoulder, 2=Elbow, 3=Wrist)
     server.on("/joint", HTTP_POST, [](AsyncWebServerRequest* req){}, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t index, size_t total) {
             if (autoMode) {
@@ -177,23 +215,12 @@ void setup() {
             int joint = doc["joint"];
             int angle = constrain((int)doc["angle"], 0, 180);
 
+            // Set target - the loop() smoothly glides to this angle without jerky snaps
             switch (joint) {
-                case 0:
-                    baseAngle = angle;
-                    baseServo.write(angle);
-                    break;
-                case 1:
-                    shoulderAngle = angle;
-                    shoulderServo.write(angle);
-                    break;
-                case 2:
-                    elbowAngle = angle;
-                    elbowServo.write(angle);
-                    break;
-                case 3:
-                    wristAngle = angle;
-                    wristServo.write(angle);
-                    break;
+                case 0: targetBase = angle; break;
+                case 1: targetShoulder = angle; break;
+                case 2: targetElbow = angle; break;
+                case 3: targetWrist = angle; break;
                 default:
                     AsyncWebServerResponse* res = req->beginResponse(400, "application/json", "{\"error\":\"Unknown joint index\"}");
                     addCORS(res);
@@ -201,8 +228,46 @@ void setup() {
                     return;
             }
 
-            Serial.printf("[SERVO] Joint %d set to %d deg\n", joint, angle);
-            AsyncWebServerResponse* res = req->beginResponse(200, "application/json", "{\"status\":\"success\"}");
+            Serial.printf("[SMOOTH SERVO] Joint %d commanded -> Target: %d deg (gliding smoothly)\n", joint, angle);
+            AsyncWebServerResponse* res = req->beginResponse(200, "application/json", "{\"status\":\"success\",\"joint\":" + String(joint) + ",\"target\":" + String(angle) + "}");
+            addCORS(res);
+            req->send(res);
+        }
+    );
+
+    // Multi-Joint Smooth Coordinated Movement Endpoint
+    server.on("/move", HTTP_POST, [](AsyncWebServerRequest* req){}, NULL,
+        [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t index, size_t total) {
+            if (autoMode) {
+                AsyncWebServerResponse* res = req->beginResponse(403, "application/json", "{\"error\":\"Auto mode active\"}");
+                addCORS(res);
+                req->send(res);
+                return;
+            }
+
+            #if ARDUINOJSON_VERSION_MAJOR >= 7
+                JsonDocument doc;
+            #else
+                StaticJsonDocument<256> doc;
+            #endif
+            deserializeJson(doc, data, len);
+
+            if (doc.containsKey("base")) targetBase = constrain((int)doc["base"], 0, 180);
+            if (doc.containsKey("shoulder")) targetShoulder = constrain((int)doc["shoulder"], 0, 180);
+            if (doc.containsKey("elbow")) targetElbow = constrain((int)doc["elbow"], 0, 180);
+            if (doc.containsKey("wrist")) targetWrist = constrain((int)doc["wrist"], 0, 180);
+
+            // Optional custom speeds
+            if (doc.containsKey("elbowDelay")) elbowDownDelay = constrain((int)doc["elbowDelay"], 15, 120);
+            if (doc.containsKey("transitDelay")) {
+                baseStepDelay = constrain((int)doc["transitDelay"], 10, 80);
+                shoulderStepDelay = baseStepDelay;
+            }
+
+            Serial.printf("[SMOOTH MOVE] Targets: Base=%d, Shoulder=%d, Elbow=%d, Wrist=%d\n",
+                          targetBase, targetShoulder, targetElbow, targetWrist);
+
+            AsyncWebServerResponse* res = req->beginResponse(200, "application/json", "{\"status\":\"success\",\"message\":\"Smooth motion profile active\"}");
             addCORS(res);
             req->send(res);
         }
@@ -266,6 +331,48 @@ void setup() {
 }
 
 void loop() {
-    // AsyncWebServer handles requests asynchronously on ESP32 background tasks
-    delay(100);
+    unsigned long now = millis();
+
+    // 1. Base Servo (Joint 0) - Smooth & steady rotation across workspace and bins
+    if (currentBase != targetBase && (now - lastBaseTick >= (unsigned long)baseStepDelay)) {
+        lastBaseTick = now;
+        if (currentBase < targetBase) currentBase++;
+        else currentBase--;
+        baseServo.write(currentBase);
+        baseAngle = currentBase;
+    }
+
+    // 2. Shoulder Servo (Joint 1) - Smooth elevation
+    if (currentShoulder != targetShoulder && (now - lastShoulderTick >= (unsigned long)shoulderStepDelay)) {
+        lastShoulderTick = now;
+        if (currentShoulder < targetShoulder) currentShoulder++;
+        else currentShoulder--;
+        shoulderServo.write(currentShoulder);
+        shoulderAngle = currentShoulder;
+    }
+
+    // 3. Elbow Servo (Joint 2) - Slow descent to pick/drop coin, steady ascent
+    if (currentElbow != targetElbow) {
+        // When moving downward (increasing angle or descending towards coin/bin), move extra slowly
+        bool isDescending = (targetElbow > currentElbow); 
+        int activeDelay = isDescending ? elbowDownDelay : elbowUpDelay;
+        if (now - lastElbowTick >= (unsigned long)activeDelay) {
+            lastElbowTick = now;
+            if (currentElbow < targetElbow) currentElbow++;
+            else currentElbow--;
+            elbowServo.write(currentElbow);
+            elbowAngle = currentElbow;
+        }
+    }
+
+    // 4. Wrist Servo (Joint 3) - Steady orientation
+    if (currentWrist != targetWrist && (now - lastWristTick >= (unsigned long)wristStepDelay)) {
+        lastWristTick = now;
+        if (currentWrist < targetWrist) currentWrist++;
+        else currentWrist--;
+        wristServo.write(currentWrist);
+        wristAngle = currentWrist;
+    }
+
+    delay(2);
 }

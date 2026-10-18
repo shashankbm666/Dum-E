@@ -57,5 +57,19 @@ class TestApiEndpoints(unittest.TestCase):
         res = self.stream_client.post('/api/sort_to_box', json={"box": 1, "esp_ip": "http://localhost:8080"})
         self.assertIn(res.status_code, [200, 502])
 
+    def test_motion_status_endpoint(self):
+        res = self.stream_client.get('/api/motion_status')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("phase", data)
+        self.assertIn("progress", data)
+
+    def test_pick_and_drop_endpoint(self):
+        self.stream_client.get('/api/sample')
+        res = self.stream_client.post('/api/pick_and_drop', json={"coin_id": 1, "box": 2, "esp_ip": "http://localhost:8080"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "success")
+
 if __name__ == '__main__':
     unittest.main()

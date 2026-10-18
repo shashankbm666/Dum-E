@@ -17,6 +17,7 @@ import math
 import cv2
 import numpy as np
 import requests
+import threading
 from flask import Flask, request, jsonify
 
 # Add parent directory to path to allow importing inverse_kinematics
@@ -434,24 +435,205 @@ def get_latest_detection():
         return get_sample()
     return jsonify(last_processed_results)
 
+# ==========================================
+# Smooth Motion Engine & Trajectory Tracking
+# ==========================================
+
+current_motion_status = {
+    "active": False,
+    "phase": "IDLE",
+    "message": "Arm is ready in neutral position.",
+    "progress": 100,
+    "last_updated": time.time()
+}
+
+def send_smooth_move(esp_ip, joints, elbow_delay=45, transit_delay=20):
+    """
+    Commands ESP32 to execute a smooth, coordinated move.
+    Uses /move endpoint with speed control, falling back to /joint.
+    """
+    payload = {
+        "base": int(joints["base"]),
+        "shoulder": int(joints["shoulder"]),
+        "elbow": int(joints["elbow"]),
+        "wrist": int(joints.get("wrist", 90)),
+        "elbowDelay": int(elbow_delay),
+        "transitDelay": int(transit_delay)
+    }
+    try:
+        res = requests.post(f"{esp_ip}/move", json=payload, timeout=0.8)
+        if res.status_code == 200:
+            return True
+    except Exception:
+        pass
+
+    # Fallback to individual /joint calls
+    j_map = {"base": 0, "shoulder": 1, "elbow": 2, "wrist": 3}
+    for name, idx in j_map.items():
+        if name in joints:
+            try:
+                requests.post(f"{esp_ip}/joint", json={"joint": idx, "angle": int(joints[name])}, timeout=0.5)
+            except Exception:
+                pass
+    return True
+
+def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_num, coin_id=1):
+    """
+    Executes a multi-stage, jerk-free pick-and-place sequence:
+      1. Lift to safe transit elevation.
+      2. Smoothly rotate base & shoulder over coin target.
+      3. Slowly lower elbow down to gently reach the coin.
+      4. Energize electromagnet and pause for solid latch.
+      5. Slowly lift elbow back up with coin.
+      6. Smoothly and steadily rotate across to destination bin (at transit altitude).
+      7. Slowly lower elbow over the bin.
+      8. De-energize electromagnet and pause to let coin drop cleanly.
+      9. Lift elbow and smoothly return to neutral home position.
+    """
+    global current_motion_status
+    current_motion_status.update({"active": True, "progress": 5, "last_updated": time.time()})
+
+    try:
+        # Step 1: Raise to Safe Transit Elevation (Elbow ~65° to avoid dragging)
+        current_motion_status.update({
+            "phase": "TRANSIT_HOVER",
+            "message": f"Hovering above Coin #{coin_id} at safe elevation...",
+            "progress": 15,
+            "last_updated": time.time()
+        })
+        hover_coin_pose = {
+            "base": coin_joints["base"],
+            "shoulder": max(30, coin_joints["shoulder"] - 15),
+            "elbow": 65,
+            "wrist": coin_joints.get("wrist", 90)
+        }
+        send_smooth_move(target_esp, hover_coin_pose, elbow_delay=25, transit_delay=20)
+        time.sleep(0.7)
+
+        # Step 2: Slow Steady Elbow Descent to Pick Coin
+        current_motion_status.update({
+            "phase": "SLOW_DESCENT_PICK",
+            "message": f"Lowering elbow slowly towards Coin #{coin_id}...",
+            "progress": 35,
+            "last_updated": time.time()
+        })
+        pick_pose = {
+            "base": coin_joints["base"],
+            "shoulder": coin_joints["shoulder"],
+            "elbow": coin_joints["elbow"],
+            "wrist": coin_joints.get("wrist", 90)
+        }
+        # Extra-slow descent: 45ms per degree for gentle coin contact
+        send_smooth_move(target_esp, pick_pose, elbow_delay=45, transit_delay=20)
+        time.sleep(1.2)
+
+        # Step 3: Energize Electromagnet
+        current_motion_status.update({
+            "phase": "LATCHING_MAGNET",
+            "message": f"Electromagnet ON. Latched to Coin #{coin_id}.",
+            "progress": 45,
+            "last_updated": time.time()
+        })
+        requests.post(f"{target_esp}/grip", json={"state": "close"}, timeout=0.5)
+        time.sleep(0.4)
+
+        # Step 4: Slow Steady Lift with Coin
+        current_motion_status.update({
+            "phase": "SLOW_ASCENT",
+            "message": f"Lifting Coin #{coin_id} smoothly from table...",
+            "progress": 55,
+            "last_updated": time.time()
+        })
+        send_smooth_move(target_esp, hover_coin_pose, elbow_delay=30, transit_delay=20)
+        time.sleep(0.8)
+
+        # Step 5: Smooth and Steady Transit Across to Bin
+        current_motion_status.update({
+            "phase": "STEADY_TRANSIT",
+            "message": f"Smooth steady transit across to Box {box_num}...",
+            "progress": 70,
+            "last_updated": time.time()
+        })
+        hover_bin_pose = {
+            "base": bin_joints["base"],
+            "shoulder": max(30, bin_joints["shoulder"] - 15),
+            "elbow": 65,
+            "wrist": bin_joints.get("wrist", 90)
+        }
+        send_smooth_move(target_esp, hover_bin_pose, elbow_delay=25, transit_delay=22)
+        time.sleep(1.2)
+
+        # Step 6: Slow Steady Elbow Descent into Bin
+        current_motion_status.update({
+            "phase": "SLOW_DESCENT_DROP",
+            "message": f"Lowering elbow slowly over Box {box_num}...",
+            "progress": 85,
+            "last_updated": time.time()
+        })
+        drop_pose = {
+            "base": bin_joints["base"],
+            "shoulder": bin_joints["shoulder"],
+            "elbow": bin_joints["elbow"],
+            "wrist": bin_joints.get("wrist", 90)
+        }
+        send_smooth_move(target_esp, drop_pose, elbow_delay=45, transit_delay=20)
+        time.sleep(1.1)
+
+        # Step 7: Release Coin into Bin
+        current_motion_status.update({
+            "phase": "RELEASING_COIN",
+            "message": f"Releasing coin into Box {box_num}...",
+            "progress": 92,
+            "last_updated": time.time()
+        })
+        requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
+        time.sleep(0.35)
+
+        # Step 8: Smooth Home Return
+        current_motion_status.update({
+            "phase": "HOME_RETURN",
+            "message": "Returning smoothly to neutral home position...",
+            "progress": 98,
+            "last_updated": time.time()
+        })
+        home_pose = {"base": 90, "shoulder": 90, "elbow": 90, "wrist": 90}
+        send_smooth_move(target_esp, home_pose, elbow_delay=25, transit_delay=20)
+        time.sleep(0.8)
+
+        current_motion_status.update({
+            "active": False,
+            "phase": "COMPLETED",
+            "message": f"Coin #{coin_id} delivered successfully to Box {box_num}!",
+            "progress": 100,
+            "last_updated": time.time()
+        })
+    except Exception as e:
+        current_motion_status.update({
+            "active": False,
+            "phase": "ERROR",
+            "message": f"Motion error: {str(e)}",
+            "progress": 0,
+            "last_updated": time.time()
+        })
+
 @app.route('/api/sort_to_box', methods=['POST'])
 def sort_to_box():
     """
-    Dispatches robotic arm directly to the detected physical coordinates of Box 1, 2, or 3.
+    Dispatches robotic arm smoothly across to the detected physical coordinates of Box 1, 2, or 3.
     """
-    global last_detected_bins
+    global last_detected_bins, last_processed_results
     data = request.get_json(force=True, silent=True) or {}
     box_num = int(data.get("box", 1))
     target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
 
-    # 1. Try to find the detected bin
+    # 1. Find detected bin target
     chosen_joints = None
     for b in last_detected_bins:
         if b.get("id") == box_num and b.get("ik"):
             chosen_joints = b["ik"]["joints"]
             break
 
-    # 2. Fallback positions if bin not detected
+    # Fallback coordinates if bin not visually detected
     if not chosen_joints:
         fallback_map = {
             1: {"base": 35, "shoulder": 40, "elbow": 90, "wrist": 90},
@@ -460,21 +642,105 @@ def sort_to_box():
         }
         chosen_joints = fallback_map.get(box_num, fallback_map[1])
 
-    try:
-        # Move joints to bin location
-        for j_idx, (j_name, angle) in enumerate(chosen_joints.items()):
-            requests.post(f"{target_esp}/joint", json={"joint": j_idx, "angle": angle}, timeout=0.5)
-        # Release electromagnet
-        requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
-        return jsonify({"status": "success", "box": box_num, "joints": chosen_joints})
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 502
+    # Check if a primary coin exists to execute full pick-and-place
+    coin_joints = None
+    if last_processed_results and last_processed_results.get("targets"):
+        t0 = last_processed_results["targets"][0]
+        if t0.get("ik"):
+            coin_joints = t0["ik"]["joints"]
+
+    if coin_joints:
+        # Launch full smooth pick-and-place in background thread
+        thread = threading.Thread(
+            target=run_smooth_pick_and_drop_sequence,
+            args=(target_esp, coin_joints, chosen_joints, box_num, 1),
+            daemon=True
+        )
+        thread.start()
+        return jsonify({
+            "status": "success",
+            "mode": "smooth_pick_and_drop",
+            "box": box_num,
+            "bin_joints": chosen_joints,
+            "coin_joints": coin_joints
+        })
+    else:
+        # Move directly to bin with smooth transit & slow descent
+        transit_pose = {"base": chosen_joints["base"], "shoulder": max(30, chosen_joints["shoulder"] - 15), "elbow": 65, "wrist": 90}
+        send_smooth_move(target_esp, transit_pose, elbow_delay=25, transit_delay=20)
+        time.sleep(0.4)
+        send_smooth_move(target_esp, chosen_joints, elbow_delay=45, transit_delay=20)
+        try:
+            requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
+        except Exception:
+            pass
+        return jsonify({"status": "success", "mode": "smooth_bin_transit", "box": box_num, "joints": chosen_joints})
+
+@app.route('/api/pick_and_drop', methods=['POST'])
+def pick_and_drop_coin():
+    """
+    Picks a specific detected coin and smoothly drops it into the chosen box.
+    """
+    global last_detected_bins, last_processed_results
+    data = request.get_json(force=True, silent=True) or {}
+    coin_id = int(data.get("coin_id", 1))
+    box_num = int(data.get("box", 1))
+    target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+
+    # 1. Locate coin IK
+    coin_joints = None
+    if last_processed_results and last_processed_results.get("targets"):
+        for t in last_processed_results["targets"]:
+            if t.get("id") == coin_id and t.get("ik"):
+                coin_joints = t["ik"]["joints"]
+                break
+
+    if not coin_joints:
+        return jsonify({"status": "error", "error": f"Coin #{coin_id} has no valid IK solution."}), 400
+
+    # 2. Locate bin IK
+    bin_joints = None
+    for b in last_detected_bins:
+        if b.get("id") == box_num and b.get("ik"):
+            bin_joints = b["ik"]["joints"]
+            break
+
+    if not bin_joints:
+        fallback_map = {
+            1: {"base": 35, "shoulder": 40, "elbow": 90, "wrist": 90},
+            2: {"base": 90, "shoulder": 35, "elbow": 90, "wrist": 90},
+            3: {"base": 145, "shoulder": 40, "elbow": 90, "wrist": 90}
+        }
+        bin_joints = fallback_map.get(box_num, fallback_map[1])
+
+    # Launch smooth sequence
+    thread = threading.Thread(
+        target=run_smooth_pick_and_drop_sequence,
+        args=(target_esp, coin_joints, bin_joints, box_num, coin_id),
+        daemon=True
+    )
+    thread.start()
+
+    return jsonify({
+        "status": "success",
+        "coin_id": coin_id,
+        "box": box_num,
+        "message": f"Smooth pick & drop initiated for Coin #{coin_id} -> Box {box_num}"
+    })
+
+@app.route('/api/motion_status', methods=['GET'])
+def get_motion_status():
+    """Returns real-time telemetry of arm motion, phase, and progress."""
+    global current_motion_status
+    return jsonify(current_motion_status)
 
 @app.route('/api/abort', methods=['POST'])
 def abort_arm():
     """Emergency stop: releases magnet and immediately returns arm to neutral 90 degrees."""
+    global current_motion_status
     data = request.get_json(force=True, silent=True) or {}
     target_esp = data.get("esp_ip") or os.environ.get("ESP32_IP", ESP32_IP)
+    current_motion_status.update({"active": False, "phase": "ABORTED", "message": "Emergency abort triggered.", "progress": 0})
     try:
         requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
         for j in range(4):

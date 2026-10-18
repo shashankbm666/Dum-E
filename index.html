@@ -887,9 +887,33 @@
             onSliderMove(3, j.wrist);
         }
 
-        // Sorting Boxes 1, 2, 3 (Dispatches to real detected bin position)
+        let motionPollInterval = null;
+
+        function startMotionStatusPolling() {
+            if (motionPollInterval) clearInterval(motionPollInterval);
+            const telemetry = document.getElementById('telemetryStatus');
+
+            motionPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/motion_status');
+                    const data = await res.json();
+                    if (data && data.message) {
+                        telemetry.innerText = data.message.toUpperCase();
+                        if (!data.active) {
+                            clearInterval(motionPollInterval);
+                            motionPollInterval = null;
+                        }
+                    }
+                } catch (e) {
+                    clearInterval(motionPollInterval);
+                    motionPollInterval = null;
+                }
+            }, 250);
+        }
+
+        // Sorting Boxes 1, 2, 3 (Dispatches to real detected bin position with smooth motion)
         async function sortToBox(boxNumber) {
-            document.getElementById('telemetryStatus').innerText = `ROUTING TO DETECTED BOX ${boxNumber}...`;
+            document.getElementById('telemetryStatus').innerText = `INITIATING SMOOTH ROUTING TO BOX ${boxNumber}...`;
             try {
                 const res = await fetch('/api/sort_to_box', {
                     method: 'POST',
@@ -898,8 +922,9 @@
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    updateSlidersDisplay(data.joints);
-                    document.getElementById('telemetryStatus').innerText = `DELIVERED TO BOX ${boxNumber}`;
+                    if (data.bin_joints) updateSlidersDisplay(data.bin_joints);
+                    else if (data.joints) updateSlidersDisplay(data.joints);
+                    startMotionStatusPolling();
                 }
             } catch (e) {
                 console.error(e);
