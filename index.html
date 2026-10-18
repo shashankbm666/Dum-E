@@ -964,9 +964,9 @@
                             document.getElementById('joint0').value = data.base;
                             document.getElementById('baseVal').innerText = data.base + '°';
                             document.getElementById('joint1').value = data.shoulder;
-                            document.getElementById('shoulderVal').innerText = data.shoulder + '°';
-                            document.getElementById('joint2').value = data.elbow;
-                            document.getElementById('elbowVal').innerText = data.elbow + '°';
+                            const uiElbow = 180 - parseInt(data.elbow);
+                            document.getElementById('joint2').value = uiElbow;
+                            document.getElementById('elbowVal').innerText = uiElbow + '°';
                         }
                     }
                 } else {
@@ -999,17 +999,23 @@
             if (labels[jointIndex]) {
                 document.getElementById(labels[jointIndex]).innerText = val + '°';
             }
+            // Reverse Joint 2 (Elbow) in webpage so 0°=Back and 180°=Front
+            const rawVal = parseInt(val);
+            const sendAngle = (jointIndex === 2) ? (180 - rawVal) : rawVal;
+
             // Throttle: send at most every 50ms per joint for real-time control
             const now = Date.now();
             if (now - _lastSent[jointIndex] >= 50) {
                 _lastSent[jointIndex] = now;
-                postData('/joint', { joint: parseInt(jointIndex), angle: parseInt(val) });
+                postData('/joint', { joint: parseInt(jointIndex), angle: sendAngle });
             }
         }
 
         function sendJoint(jointIndex, angleValue) {
             // Final send on mouse-up to guarantee the last value arrives
-            postData('/joint', { joint: parseInt(jointIndex), angle: parseInt(angleValue) });
+            const rawVal = parseInt(angleValue);
+            const sendAngle = (jointIndex === 2) ? (180 - rawVal) : rawVal;
+            postData('/joint', { joint: parseInt(jointIndex), angle: sendAngle });
         }
 
         let magState = false;
