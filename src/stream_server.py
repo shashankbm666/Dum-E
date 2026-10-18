@@ -449,14 +449,13 @@ current_motion_status = {
 
 def send_smooth_move(esp_ip, joints, elbow_delay=45, transit_delay=20):
     """
-    Commands ESP32 to execute a smooth, coordinated move.
+    Commands ESP32 to execute a smooth, coordinated move for 3 joints (Base, Shoulder, Elbow).
     Uses /move endpoint with speed control, falling back to /joint.
     """
     payload = {
         "base": int(joints["base"]),
         "shoulder": int(joints["shoulder"]),
         "elbow": int(joints["elbow"]),
-        "wrist": int(joints.get("wrist", 90)),
         "elbowDelay": int(elbow_delay),
         "transitDelay": int(transit_delay)
     }
@@ -467,8 +466,8 @@ def send_smooth_move(esp_ip, joints, elbow_delay=45, transit_delay=20):
     except Exception:
         pass
 
-    # Fallback to individual /joint calls
-    j_map = {"base": 0, "shoulder": 1, "elbow": 2, "wrist": 3}
+    # Fallback to individual /joint calls (0=Base, 1=Shoulder, 2=Elbow)
+    j_map = {"base": 0, "shoulder": 1, "elbow": 2}
     for name, idx in j_map.items():
         if name in joints:
             try:
@@ -504,8 +503,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         hover_coin_pose = {
             "base": coin_joints["base"],
             "shoulder": max(30, coin_joints["shoulder"] - 15),
-            "elbow": 65,
-            "wrist": coin_joints.get("wrist", 90)
+            "elbow": 65
         }
         send_smooth_move(target_esp, hover_coin_pose, elbow_delay=25, transit_delay=20)
         time.sleep(0.7)
@@ -520,8 +518,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         pick_pose = {
             "base": coin_joints["base"],
             "shoulder": coin_joints["shoulder"],
-            "elbow": coin_joints["elbow"],
-            "wrist": coin_joints.get("wrist", 90)
+            "elbow": coin_joints["elbow"]
         }
         # Extra-slow descent: 45ms per degree for gentle coin contact
         send_smooth_move(target_esp, pick_pose, elbow_delay=45, transit_delay=20)
@@ -557,8 +554,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         hover_bin_pose = {
             "base": bin_joints["base"],
             "shoulder": max(30, bin_joints["shoulder"] - 15),
-            "elbow": 65,
-            "wrist": bin_joints.get("wrist", 90)
+            "elbow": 65
         }
         send_smooth_move(target_esp, hover_bin_pose, elbow_delay=25, transit_delay=22)
         time.sleep(1.2)
@@ -573,8 +569,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
         drop_pose = {
             "base": bin_joints["base"],
             "shoulder": bin_joints["shoulder"],
-            "elbow": bin_joints["elbow"],
-            "wrist": bin_joints.get("wrist", 90)
+            "elbow": bin_joints["elbow"]
         }
         send_smooth_move(target_esp, drop_pose, elbow_delay=45, transit_delay=20)
         time.sleep(1.1)
@@ -596,7 +591,7 @@ def run_smooth_pick_and_drop_sequence(target_esp, coin_joints, bin_joints, box_n
             "progress": 98,
             "last_updated": time.time()
         })
-        home_pose = {"base": 90, "shoulder": 90, "elbow": 90, "wrist": 90}
+        home_pose = {"base": 90, "shoulder": 90, "elbow": 90}
         send_smooth_move(target_esp, home_pose, elbow_delay=25, transit_delay=20)
         time.sleep(0.8)
 
@@ -636,9 +631,9 @@ def sort_to_box():
     # Fallback coordinates if bin not visually detected
     if not chosen_joints:
         fallback_map = {
-            1: {"base": 35, "shoulder": 40, "elbow": 90, "wrist": 90},
-            2: {"base": 90, "shoulder": 35, "elbow": 90, "wrist": 90},
-            3: {"base": 145, "shoulder": 40, "elbow": 90, "wrist": 90}
+            1: {"base": 35, "shoulder": 40, "elbow": 90},
+            2: {"base": 90, "shoulder": 35, "elbow": 90},
+            3: {"base": 145, "shoulder": 40, "elbow": 90}
         }
         chosen_joints = fallback_map.get(box_num, fallback_map[1])
 
@@ -666,7 +661,7 @@ def sort_to_box():
         })
     else:
         # Move directly to bin with smooth transit & slow descent
-        transit_pose = {"base": chosen_joints["base"], "shoulder": max(30, chosen_joints["shoulder"] - 15), "elbow": 65, "wrist": 90}
+        transit_pose = {"base": chosen_joints["base"], "shoulder": max(30, chosen_joints["shoulder"] - 15), "elbow": 65}
         send_smooth_move(target_esp, transit_pose, elbow_delay=25, transit_delay=20)
         time.sleep(0.4)
         send_smooth_move(target_esp, chosen_joints, elbow_delay=45, transit_delay=20)
@@ -707,9 +702,9 @@ def pick_and_drop_coin():
 
     if not bin_joints:
         fallback_map = {
-            1: {"base": 35, "shoulder": 40, "elbow": 90, "wrist": 90},
-            2: {"base": 90, "shoulder": 35, "elbow": 90, "wrist": 90},
-            3: {"base": 145, "shoulder": 40, "elbow": 90, "wrist": 90}
+            1: {"base": 35, "shoulder": 40, "elbow": 90},
+            2: {"base": 90, "shoulder": 35, "elbow": 90},
+            3: {"base": 145, "shoulder": 40, "elbow": 90}
         }
         bin_joints = fallback_map.get(box_num, fallback_map[1])
 
@@ -743,9 +738,9 @@ def abort_arm():
     current_motion_status.update({"active": False, "phase": "ABORTED", "message": "Emergency abort triggered.", "progress": 0})
     try:
         requests.post(f"{target_esp}/grip", json={"state": "open"}, timeout=0.5)
-        for j in range(4):
+        for j in range(3):
             requests.post(f"{target_esp}/joint", json={"joint": j, "angle": 90}, timeout=0.5)
-        return jsonify({"status": "aborted", "joints": {"base": 90, "shoulder": 90, "elbow": 90, "wrist": 90}, "magnet": "off"})
+        return jsonify({"status": "aborted", "joints": {"base": 90, "shoulder": 90, "elbow": 90}, "magnet": "off"})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 502
 

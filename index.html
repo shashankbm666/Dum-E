@@ -449,9 +449,8 @@
 
         .sliders-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            column-gap: 32px;
-            row-gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
         }
 
         .slider-group {
@@ -696,14 +695,6 @@
                     <input type="range" id="joint2" min="0" max="180" value="90" oninput="onSliderMove(2, this.value)" onchange="sendJoint(2, this.value)">
                 </div>
 
-                <!-- Joint 3: Wrist -->
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <span class="slider-title">Wrist Tilt (Joint 3)</span>
-                        <span class="slider-val" id="wristVal">90°</span>
-                    </div>
-                    <input type="range" id="joint3" min="0" max="180" value="90" oninput="onSliderMove(3, this.value)" onchange="sendJoint(3, this.value)">
-                </div>
             </div>
 
             <div class="bottom-actions-bar">
@@ -877,14 +868,18 @@
 
         function updateSlidersDisplay(j) {
             if (!j) return;
-            document.getElementById('joint0').value = j.base;
-            document.getElementById('joint1').value = j.shoulder;
-            document.getElementById('joint2').value = j.elbow;
-            document.getElementById('joint3').value = j.wrist;
-            onSliderMove(0, j.base);
-            onSliderMove(1, j.shoulder);
-            onSliderMove(2, j.elbow);
-            onSliderMove(3, j.wrist);
+            if (j.base !== undefined) {
+                document.getElementById('joint0').value = j.base;
+                onSliderMove(0, j.base);
+            }
+            if (j.shoulder !== undefined) {
+                document.getElementById('joint1').value = j.shoulder;
+                onSliderMove(1, j.shoulder);
+            }
+            if (j.elbow !== undefined) {
+                document.getElementById('joint2').value = j.elbow;
+                onSliderMove(2, j.elbow);
+            }
         }
 
         let motionPollInterval = null;
@@ -986,8 +981,10 @@
         }
 
         function onSliderMove(jointIndex, val) {
-            const labels = ['baseVal', 'shoulderVal', 'elbowVal', 'wristVal'];
-            document.getElementById(labels[jointIndex]).innerText = val + '°';
+            const labels = ['baseVal', 'shoulderVal', 'elbowVal'];
+            if (labels[jointIndex]) {
+                document.getElementById(labels[jointIndex]).innerText = val + '°';
+            }
         }
 
         function sendJoint(jointIndex, angleValue) {
@@ -1004,7 +1001,7 @@
         }
 
         function resetNeutral() {
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 3; i++) {
                 document.getElementById('joint' + i).value = 90;
                 onSliderMove(i, 90);
                 sendJoint(i, 90);

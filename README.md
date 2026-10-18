@@ -1,4 +1,4 @@
-# Dum-E: 4-DOF Robotic Arm & Vision Dashboard
+# Dum-E: 3-DOF Robotic Arm & Vision Dashboard
 
 [![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![ESP32](https://img.shields.io/badge/ESP32-Arduino-orange.svg)](https://www.espressif.com/)
@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An end-to-end autonomous robotic arm pick-and-place system featuring:
-- **4-DOF Robotic Arm Control** (MG90S servos for Base, Shoulder, Elbow, Wrist + Electromagnet relay).
+- **3-DOF Robotic Arm Control** (MG90S servos for Base, Shoulder, Elbow + Electromagnet relay).
 - **ESP32 Asynchronous REST API** running over Wi-Fi.
 - **Computer Vision (OpenCV)**: Circular coin detection and rectangular colored sorting bin detection (Green, Red, Black, Blue, Yellow).
 - **3D Inverse Kinematics (IK)** with interactive tap-to-set base reference origin.
@@ -81,7 +81,7 @@ If you prefer installing manually using the terminal:
    pip install -r requirements.txt
    ```
 
-5. **Start the Command Center:**
+5. **Start Dum-E:**
    ```bash
    python run_server.py
    ```
@@ -116,11 +116,13 @@ You can control the robotic arm and use your smartphone's camera to snap photos 
 | Component | Pin (GPIO) | Signal Type | Description |
 | :--- | :--- | :--- | :--- |
 | **Base Servo (MG90S)** | **GPIO 13** | PWM (50 Hz) | Horizontal Yaw (0° to 180°) |
-| **Shoulder Servo (MG90S)** | **GPIO 12** | PWM (50 Hz) | Vertical Pitch (0° to 180°) |
-| **Elbow Servo (MG90S)** | **GPIO 14** | PWM (50 Hz) | Arm Flexion (0° to 180°) |
-| **Wrist Servo (MG90S)** | **GPIO 27** | PWM (50 Hz) | Tilt Angle (0° to 180°) |
+| **Shoulder Servo (MG90S)** | **GPIO 14** | PWM (50 Hz) | Vertical Pitch (0° to 180°) |
+| **Elbow Servo (MG90S)** | **GPIO 27** | PWM (50 Hz) | Arm Flexion (0° to 180°) |
 | **Electromagnet Relay** | **GPIO 26** | Digital Out | Active HIGH (Relay ON) |
 | **Power Supply** | External 5V 3A+ | Power | **Connect Common Ground (GND) to ESP32!** |
+
+> [!NOTE]
+> GPIO 12 (D12) is deliberately left unconnected. It is the MTDI strapping pin — pulling it HIGH during boot can cause flash voltage misconfiguration and prevent the ESP32 from starting.
 
 > [!CAUTION]
 > **Never power servos directly from the ESP32 3.3V or Vin pins!** Servos draw significant stall currents that will cause the ESP32 to brown out or damage its voltage regulator. Always use an external 5V 3A+ power supply with ground tied to ESP32 GND.
@@ -165,9 +167,9 @@ You can control the robotic arm and use your smartphone's camera to snap photos 
 |                  |               |            | [Cancel]    |
 |                  |               |            | [abort]     |
 +-------------------------------------------------------------+
-|                     all SLIDER CONTROLS                     |
-|  Base: [---O---] 90°               Shoulder: [---O---] 90°  |
-|  Elbow: [---O---] 90°              Wrist:    [---O---] 90°  |
+|                     SLIDER CONTROLS                         |
+|  Base: [---O---] 90°    Shoulder: [---O---] 90°             |
+|  Elbow: [---O---] 90°                                      |
 |                                                             |
 |  [ELECTROMAGNET: OFF]             [RESET NEUTRAL (90°)]     |
 +-------------------------------------------------------------+

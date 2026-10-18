@@ -1,7 +1,7 @@
 /*
  * ESP32 Robotic Arm & Vision Command Center Firmware
  * ----------------------------------------------------
- * Controls 4x MG90S Servos (Base, Shoulder, Elbow, Wrist) and an Electromagnet Relay
+ * Controls 3x MG90S Servos (Base, Shoulder, Elbow) and an Electromagnet Relay
  * Exposes a RESTful HTTP API over local Wi-Fi.
  *
  * Required Arduino Libraries:
@@ -24,19 +24,19 @@ const char* ssid     = "Samsung";
 const char* password = "12345678";
 
 // ==========================================
-// Hardware Pin Mapping (ESP32 DevKit v1)
+// Hardware Pin Mapping (ESP32 DevKit v1 matching physical photo)
 // ==========================================
-const int BASE_PIN     = 13;  // Base Rotation Servo
-const int SHOULDER_PIN = 12;  // Shoulder Pitch Servo
-const int ELBOW_PIN    = 14;  // Elbow Flex Servo
-const int WRIST_PIN    = 27;  // Wrist Tilt Servo
-const int MAGNET_PIN   = 26;  // Electromagnet Relay Module
+const int BASE_PIN     = 13;  // Base Rotation Servo (D13)
+const int SHOULDER_PIN = 14;  // Shoulder Pitch Servo (D14)
+const int ELBOW_PIN    = 27;  // Elbow Flex Servo (D27)
+const int MAGNET_PIN   = 26;  // Electromagnet Relay Module (D26)
+// GND connected to ESP32 GND
+// D12 is UNUSED / EMPTY
 
-// Servo Objects
+// Servo Objects (3-DOF Arm + Electromagnet)
 Servo baseServo;
 Servo shoulderServo;
 Servo elbowServo;
-Servo wristServo;
 
 // Web Server on port 80
 AsyncWebServer server(80);
@@ -45,19 +45,16 @@ AsyncWebServer server(80);
 int currentBase     = 90;
 int currentShoulder = 90;
 int currentElbow    = 90;
-int currentWrist    = 90;
 
 // Target Angles (Commanded by user or automated routines)
 int targetBase     = 90;
 int targetShoulder = 90;
 int targetElbow    = 90;
-int targetWrist    = 90;
 
 // Aliases for compatibility
 int baseAngle     = 90;
 int shoulderAngle = 90;
 int elbowAngle    = 90;
-int wristAngle    = 90;
 
 bool magnetOn     = false;
 bool autoMode     = false;
@@ -71,13 +68,10 @@ int shoulderStepDelay = 20;
 int elbowDownDelay    = 45;
 int elbowUpDelay      = 25;
 
-int wristStepDelay    = 20;
-
 // Timers for rate limiting
 unsigned long lastBaseTick     = 0;
 unsigned long lastShoulderTick = 0;
 unsigned long lastElbowTick    = 0;
-unsigned long lastWristTick    = 0;
 
 // Helper to inject CORS headers for browser frontends
 void addCORS(AsyncWebServerResponse* res) {
@@ -89,17 +83,16 @@ void addCORS(AsyncWebServerResponse* res) {
 void setup() {
     Serial.begin(115200);
     delay(500);
-    Serial.println("\n[SYSTEM] Booting ESP32 Robotic Arm Controller...");
+    Serial.println("\n[SYSTEM] Booting Dum-E 3-DOF Arm Controller...");
 
     // Configure Relay Pin
     pinMode(MAGNET_PIN, OUTPUT);
     digitalWrite(MAGNET_PIN, LOW); // Electromagnet starts OFF
 
-    // Allocate PWM timers for ESP32Servo
+    // Allocate PWM timers for ESP32Servo (3 Timers for 3 Servos)
     ESP32PWM::allocateTimer(0);
     ESP32PWM::allocateTimer(1);
     ESP32PWM::allocateTimer(2);
-    ESP32PWM::allocateTimer(3);
 
     // Initialize Servos with standard 50Hz and 500-2400us pulse widths for MG90S
     baseServo.setPeriodHertz(50);
@@ -114,11 +107,7 @@ void setup() {
     elbowServo.attach(ELBOW_PIN, 500, 2400);
     elbowServo.write(elbowAngle);
 
-    wristServo.setPeriodHertz(50);
-    wristServo.attach(WRIST_PIN, 500, 2400);
-    wristServo.write(wristAngle);
-
-    Serial.println("[SYSTEM] Servos centered at 90 degrees.");
+    Serial.println("[SYSTEM] 3 Servos centered at 90 degrees (Base:13, Shoulder:14, Elbow:27, Magnet:26).");
 
     // Connect to Wi-Fi
     Serial.printf("[WIFI] Connecting to %s ", ssid);
@@ -164,20 +153,18 @@ void setup() {
         #if ARDUINOJSON_VERSION_MAJOR >= 7
             JsonDocument doc;
         #else
-            StaticJsonDocument<384> doc;
+            StaticJsonDocument<256> doc;
         #endif
         bool isMoving = (currentBase != targetBase || currentShoulder != targetShoulder ||
-                         currentElbow != targetElbow || currentWrist != targetWrist);
+                         currentElbow != targetElbow);
 
         doc["status"] = "ok";
         doc["base"] = currentBase;
         doc["shoulder"] = currentShoulder;
         doc["elbow"] = currentElbow;
-        doc["wrist"] = currentWrist;
         doc["targetBase"] = targetBase;
         doc["targetShoulder"] = targetShoulder;
         doc["targetElbow"] = targetElbow;
-        doc["targetWrist"] = targetWrist;
         doc["isMoving"] = isMoving;
         doc["magnet"] = magnetOn;
         doc["autoMode"] = autoMode;
@@ -189,7 +176,7 @@ void setup() {
         req->send(res);
     });
 
-    // Set Joint Angle with Smooth Stepping (0=Base, 1=Shoulder, 2=Elbow, 3=Wrist)
+    // Set Joint Angle with Smooth Stepping (0=Base, 1=Shoulder, 2=Elbow)
     server.on("/joint", HTTP_POST, [](AsyncWebServerRequest* req){}, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t index, size_t total) {
             if (autoMode) {
@@ -220,9 +207,8 @@ void setup() {
                 case 0: targetBase = angle; break;
                 case 1: targetShoulder = angle; break;
                 case 2: targetElbow = angle; break;
-                case 3: targetWrist = angle; break;
                 default:
-                    AsyncWebServerResponse* res = req->beginResponse(400, "application/json", "{\"error\":\"Unknown joint index\"}");
+                    AsyncWebServerResponse* res = req->beginResponse(400, "application/json", "{\"error\":\"Unknown joint index (0=Base, 1=Shoulder, 2=Elbow)\"}");
                     addCORS(res);
                     req->send(res);
                     return;
@@ -235,7 +221,7 @@ void setup() {
         }
     );
 
-    // Multi-Joint Smooth Coordinated Movement Endpoint
+    // Multi-Joint Smooth Coordinated Movement Endpoint (3 Servos)
     server.on("/move", HTTP_POST, [](AsyncWebServerRequest* req){}, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t index, size_t total) {
             if (autoMode) {
@@ -255,7 +241,6 @@ void setup() {
             if (doc.containsKey("base")) targetBase = constrain((int)doc["base"], 0, 180);
             if (doc.containsKey("shoulder")) targetShoulder = constrain((int)doc["shoulder"], 0, 180);
             if (doc.containsKey("elbow")) targetElbow = constrain((int)doc["elbow"], 0, 180);
-            if (doc.containsKey("wrist")) targetWrist = constrain((int)doc["wrist"], 0, 180);
 
             // Optional custom speeds
             if (doc.containsKey("elbowDelay")) elbowDownDelay = constrain((int)doc["elbowDelay"], 15, 120);
@@ -264,8 +249,8 @@ void setup() {
                 shoulderStepDelay = baseStepDelay;
             }
 
-            Serial.printf("[SMOOTH MOVE] Targets: Base=%d, Shoulder=%d, Elbow=%d, Wrist=%d\n",
-                          targetBase, targetShoulder, targetElbow, targetWrist);
+            Serial.printf("[SMOOTH MOVE] Targets: Base=%d, Shoulder=%d, Elbow=%d\n",
+                          targetBase, targetShoulder, targetElbow);
 
             AsyncWebServerResponse* res = req->beginResponse(200, "application/json", "{\"status\":\"success\",\"message\":\"Smooth motion profile active\"}");
             addCORS(res);
@@ -363,15 +348,6 @@ void loop() {
             elbowServo.write(currentElbow);
             elbowAngle = currentElbow;
         }
-    }
-
-    // 4. Wrist Servo (Joint 3) - Steady orientation
-    if (currentWrist != targetWrist && (now - lastWristTick >= (unsigned long)wristStepDelay)) {
-        lastWristTick = now;
-        if (currentWrist < targetWrist) currentWrist++;
-        else currentWrist--;
-        wristServo.write(currentWrist);
-        wristAngle = currentWrist;
     }
 
     delay(2);

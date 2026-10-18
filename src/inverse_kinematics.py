@@ -148,16 +148,12 @@ class ArmKinematics:
         if base is None or shoulder is None or elbow is None:
             return None
 
-        # Auto-compute wrist angle to keep the magnet parallel to ground
-        wrist = 90  # Default neutral tilt
-
         return {
             "world_coords": {"x": round(world_x, 2), "y": round(world_y, 2), "z": round(target_z, 2)},
             "joints": {
                 "base": base,
                 "shoulder": shoulder,
-                "elbow": elbow,
-                "wrist": wrist
+                "elbow": elbow
             }
         }
 
@@ -196,7 +192,6 @@ class ArmKinematics:
             "joints": {
                 "base": base_deg,
                 "shoulder": shoulder_deg,
-                "elbow": elbow_deg,
-                "wrist": 90
+                "elbow": elbow_deg
             }
         }

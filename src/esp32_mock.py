@@ -19,11 +19,9 @@ def create_mock_app():
         "base": 90,
         "shoulder": 90,
         "elbow": 90,
-        "wrist": 90,
         "targetBase": 90,
         "targetShoulder": 90,
         "targetElbow": 90,
-        "targetWrist": 90,
         "isMoving": False,
         "magnetOn": False,
         "autoMode": False
@@ -43,19 +41,19 @@ def create_mock_app():
 
     @app.route('/move', methods=['POST'])
     def set_move():
-        """Smooth multi-joint movement endpoint."""
+        """Smooth multi-joint movement endpoint (3 Servos: Base, Shoulder, Elbow)."""
         if state["autoMode"]:
             return jsonify({"error": "Auto mode active"}), 403
 
         data = request.get_json(force=True, silent=True) or {}
-        for j_name in ["base", "shoulder", "elbow", "wrist"]:
+        for j_name in ["base", "shoulder", "elbow"]:
             if j_name in data:
                 val = max(0, min(180, int(data[j_name])))
                 state[j_name] = val
                 state[f"target{j_name.capitalize()}"] = val
 
         elbow_desc = " (SLOW DESCENT)" if data.get("elbowDelay", 0) >= 35 else ""
-        print(f"[MOCK ESP32] Smooth Move -> Base:{state['base']}° Shoulder:{state['shoulder']}° Elbow:{state['elbow']}°{elbow_desc} Wrist:{state['wrist']}°")
+        print(f"[MOCK ESP32] Smooth Move -> Base:{state['base']}° Shoulder:{state['shoulder']}° Elbow:{state['elbow']}°{elbow_desc}")
         return jsonify({"status": "success", "state": state})
 
     @app.route('/joint', methods=['POST'])
@@ -76,10 +74,10 @@ def create_mock_app():
         except ValueError:
             return jsonify({"error": "Invalid numbers"}), 400
 
-        joint_names = {0: "base", 1: "shoulder", 2: "elbow", 3: "wrist"}
+        joint_names = {0: "base", 1: "shoulder", 2: "elbow"}
         name = joint_names.get(joint)
         if not name:
-            return jsonify({"error": f"Invalid joint {joint}"}), 400
+            return jsonify({"error": f"Invalid joint {joint} (valid: 0=Base, 1=Shoulder, 2=Elbow)"}), 400
 
         state[name] = angle
         state[f"target{name.capitalize()}"] = angle

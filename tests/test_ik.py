@@ -40,7 +40,6 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertIn("base", res["joints"])
         self.assertIn("shoulder", res["joints"])
         self.assertIn("elbow", res["joints"])
-        self.assertIn("wrist", res["joints"])
 
 if __name__ == '__main__':
     unittest.main()
